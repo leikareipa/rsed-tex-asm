@@ -11,7 +11,6 @@ VRAM_SEG            = 0a000h                ; address of the video ram segment i
 TRANSPARENT_COLOR   = 0                    ; transparent color index.
 SCREEN_W            = 320                   ; screen resolution (vga mode 13h).
 SCREEN_H            = 200                   ;
-REFRESH_RATE        = 60                    ; how many frames per second we render.
 TIMER_RES           = 5                     ; timer resolution, in milliseconds.
 TIMER_TICKS_PER_SEC = 200                   ; how many times per second the timer interrupt is fired.
 

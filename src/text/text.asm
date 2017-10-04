@@ -71,7 +71,7 @@ Draw_String:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws an unsigned integer (valid range: 0-999) into a video memory buffer in VGA mode 13h.
+;;; Draws an unsigned integer (valid range: 0-99) into a video memory buffer in VGA mode 13h.
 ;;; The routine first converts the integer into an ASCII string, then calls the string drawer
 ;;; routine to draw it.
 ;;;
@@ -80,26 +80,28 @@ Draw_String:
 ;;;     - cl = the color to draw with
 ;;;     - bx = the value to draw
 ;;; DESTROYS:
-;;;     - eax, bx, cl
+;;;     - eax, cl
 ;;; RETURNS:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Unsigned_Integer:
+    push bx
+
     mov byte [tmp_int_str],cl               ; save the color code at the beginning of the string.
-    mov eax,0a0064h                         ; low 16 bits = 100d, high 16 bits = 10d.
+    mov eax,0a0064h                         ; low 16 bits = 100, high 16 bits = 10.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; extract the most significant digit from the value. that is, keep subtracting 100 from the value
     ; until the value is below 100, and the number of times we needed to subtract is the digit.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cl,'0'
-    .100:
-        cmp bx,ax                           ; ax < 100?
-        jb .100_done
-        sub bx,ax
-        inc cl
-        jmp .100
-    .100_done:
+    ;mov cl,'0'
+    ;.100:
+    ;    cmp bx,ax                           ; ax < 100?
+    ;    jb .100_done
+    ;    sub bx,ax
+    ;    inc cl
+    ;    jmp .100
+    ;.100_done:
     ;mov byte [tmp_int_str+1],cl
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,9 +126,21 @@ Draw_Unsigned_Integer:
     mov byte [tmp_int_str+3],bl             ; bl == third-most significant digit.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; see whether the value is below 10, and if it is, remove the leading zero character.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp ch,'0'                              ; is the value < 10?
+    jne .no_adjust
+    mov bh,0
+    mov word [tmp_int_str+1],bx             ; store the first digit at the start of the string, followed by a null-terminating 0.
+
+    .no_adjust:
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print the finished string to the screen and return.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov si,tmp_int_str
     call Draw_String
+
+    pop bx
 
     ret

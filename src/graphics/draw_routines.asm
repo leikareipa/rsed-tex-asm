@@ -22,6 +22,7 @@ Draw_Color_Selector:
     .SIDE_OFFSET    = 13
     .SWATCH_WIDTH   = 8
     .SWATCH_HEIGHT  = 6
+    .FONT_HEIGHT    = 6
 
     sti                                     ; make sure the direction flag points forward.
 
@@ -30,12 +31,34 @@ Draw_Color_Selector:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) - .SWATCH_WIDTH
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the swatches.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov al,0
     .draw_swatches:
         call Draw_Color_Swatch
         inc al
         cmp al,32
         jne .draw_swatches
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw swatch labels, which tell you the color index of the given swatch.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3
+    mov bx,0                                ; index number to print to screen.
+    .draw_labels:
+        mov cl,'i'                          ; text color.
+        call Draw_Unsigned_Integer
+        inc bx
+        add di,SCREEN_W * .FONT_HEIGHT
+        cmp bx,32
+        jne .draw_labels
+
+    ; draw the currently selected swatch's label with a brighter color.
+    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3
+    mov cl,'h'
+    mov bx,0
+    call Draw_Unsigned_Integer
 
     ret
 

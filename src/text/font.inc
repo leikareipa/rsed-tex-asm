@@ -24,7 +24,7 @@ font	dw 0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0f
         dw 00500h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [.].
         dw 00142h,0013fh,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [/].
         dw 00000h,00001h,00001h,0013eh,00002h,0013eh,00002h,0013eh,00002h,0013eh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh ; [0].
-        dw 00001h,0013fh,00001h,00140h,00140h,0013fh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [1].
+        dw 00001h,0013fh,00001h,00140h,00140h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [1].
         dw 00000h,00001h,00001h,00140h,0013fh,00001h,0013eh,00140h,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [2].
         dw 00000h,00001h,00001h,00140h,0013eh,00001h,00001h,00140h,0013eh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [3].
         dw 00000h,00002h,0013eh,00002h,0013eh,00001h,00001h,00140h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [4].

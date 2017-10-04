@@ -4,17 +4,6 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Update_Frame_Timer:
-    mov dl,[frames_done]
-    inc dl
-    cmp dl,REFRESH_RATE
-    jb .exit
-    xor dl,dl
-    inc [seconds]
-    .exit:
-    mov [frames_done],dl
-    ret
-
 Handle_Timer_Interrupt:
     cli                                     ; protect this code from re-entrancy.
     push ax                                 ; custom interrupts need to reserve all registers they change.
