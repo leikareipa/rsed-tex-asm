@@ -47,17 +47,22 @@ Draw_Color_Selector:
     mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3
     mov bx,0                                ; index number to print to screen.
     .draw_labels:
-        mov cl,'i'                          ; text color.
+        mov cl,'d'                          ; text color.
         call Draw_Unsigned_Integer
         inc bx
         add di,SCREEN_W * .FONT_HEIGHT
         cmp bx,32
         jne .draw_labels
 
-    ; draw the currently selected swatch's label with a brighter color.
-    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3
-    mov cl,'h'
-    mov bx,0
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the currently selected color's label with a brighter color.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax, (.FONT_HEIGHT * SCREEN_W)
+    movzx bx, [pen_color]
+    mul bx                                  ; ax = y offset of the start of the swatch's label.
+    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3   ; x,y coordinate of the first color swatch.
+    add di,ax                               ; move to the x,y of the selected color swatch.
+    mov cl,'b'                              ; select a light color to print the label.
     call Draw_Unsigned_Integer
 
     ret
@@ -69,12 +74,13 @@ Draw_Color_Selector:
 ;;;     - al to hold the palette index to be drawn.
 ;;;     - es:di to point to the first pixel in the screen buffer to start drawing to.
 ;;; DESTROYS:
-;;;     - eax
+;;;     - high 16 bits of eax
 ;;; RETURNS:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Color_Swatch:
     push cx
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; constants.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

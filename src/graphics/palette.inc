@@ -102,13 +102,14 @@ palette         db 000h, 000h, 000h ; index 0.
                 db 00ch, 00eh, 010h ; index: 94.
                 db 00ch, 00eh, 010h ; index: 95.
                 db 00ah, 00ah, 00ah ; index: 96.
-                db 00ah, 00ah, 00ah ; index: 97.
-                db 00ah, 00ah, 00ah ; index: 98.
-                db 00ah, 00ah, 00ah ; index: 99.
-                db 00ah, 00ah, 00ah ; index: 100.
-                db 00ah, 00ah, 00ah ; index: 101.
-                db 00ah, 00ah, 00ah ; index: 102.
-                db 00ah, 00ah, 00ah ; index: 103.
+                ; start of ui color block (at ascii code 'a').
+                db 63  , 63  , 63   ; index: 97. white.     a
+                db 48  , 48  , 48   ; index: 98. litegray.  b
+                db 32  , 32  , 32   ; index: 99. gray.      c
+                db 16  , 16  , 16   ; index: 100. dimgray.  d
+                db 0   , 0   , 0    ; index: 101. black.    e
+                db 63  , 0   , 0    ; index: 102. red.      f
+                db 63  , 63  , 0    ; index: 103. yellow.   g
                 db 00ah, 00ah, 00ah ; index: 104.
                 db 00ah, 00ah, 00ah ; index: 105.
                 db 00ah, 00ah, 00ah ; index: 106.

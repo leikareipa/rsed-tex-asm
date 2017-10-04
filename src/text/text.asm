@@ -40,10 +40,9 @@ Draw_String:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ; see whether the current character is a control character for color.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        cmp bl,'a'
+        cmp bl,'a'                          ; for lowercase ascii, we take the value to refer to a palette entry, i.e. it's a color code.
         jb .l1                              ; jump if not lowercase.
         mov al,bl                           ; if the character is a color code, set the text color accordingly and move on.
-        sub al,'a'                          ; make it so that 'a' indexes to palette index 0, 'b' to 1, ..., 'z' to 25.
         jmp .l2                             ; jump to the end of the loop. don't draw this character.
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,11 +128,11 @@ Draw_Unsigned_Integer:
     ; see whether the value is below 10, and if it is, remove the leading zero character.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp ch,'0'                              ; is the value < 10?
-    jne .no_adjust
+    jne .no_leading_adjust
     mov bh,0
     mov word [tmp_int_str+1],bx             ; store the first digit at the start of the string, followed by a null-terminating 0.
 
-    .no_adjust:
+    .no_leading_adjust:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print the finished string to the screen and return.

@@ -112,7 +112,7 @@ call Set_Timer_Interrupt_Handler
     cmp ax,0
     jnz .skip_fps_display                   ; if the mouse isn't at the upper border, don't print out the fps display.
     movzx bx,[frame_time]
-    mov cl,'c'
+    mov cl,'g'
     mov di,308
     call Draw_Unsigned_Integer
     mov [frame_time],0
@@ -155,6 +155,9 @@ segment @BASE_DATA
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
     mouse_pos_xy dd 0                       ; the x and y coordinates of the mouse cursor.
     mouse_buttons dw 0                      ; mouse button status.
+
+    ; editing.
+    pen_color db 4                          ; which palette index the pen is painting with.
 
     ; error messages.
     err_mouse_init db "ERROR: Failed to initialize the mouse.",0ah,0dh,"$"
