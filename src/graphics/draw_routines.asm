@@ -5,8 +5,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws a strip of palette color swatches from which the user can select the color to draw with.
-;;; Each swatch is 8 px wide and 6 px tall.
+;;; Draws all the editable pala textures.
 ;;;
 ;;; EXPECTS:
 ;;;     (- unknown)
@@ -14,6 +13,27 @@
 ;;;     (- unknown)
 ;;; RETURNS:
 ;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Palat_Selector:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; print the name of the palat file in the top right corner of the selector.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,(SCREEN_W * 2) + 58
+    mov si,pala_file_str
+    call Draw_String
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws a strip of palette color swatches from which the user can select the color to draw with.
+;;; Each swatch is 8 px wide and 6 px tall.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     - di, ax, bx
+;;; RETURNS:
+;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Color_Selector:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,7 +64,7 @@ Draw_Color_Selector:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw swatch labels, which tell you the color index of the given swatch.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3
+    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 2
     mov bx,0                                ; index number to print to screen.
     .draw_labels:
         mov cl,'d'                          ; text color.
@@ -60,7 +80,7 @@ Draw_Color_Selector:
     mov ax, (.FONT_HEIGHT * SCREEN_W)
     movzx bx, [pen_color]
     mul bx                                  ; ax = y offset of the start of the swatch's label.
-    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 3   ; x,y coordinate of the first color swatch.
+    mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 2   ; x,y coordinate of the first color swatch.
     add di,ax                               ; move to the x,y of the selected color swatch.
     mov cl,'b'                              ; select a light color to print the label.
     call Draw_Unsigned_Integer
