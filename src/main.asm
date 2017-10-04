@@ -7,13 +7,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; constants.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-PALA_BUFFER_SIZE    = 100                ; how many bytes of data from the PALA file we'll load and handle.
+PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
 TRANSPARENT_COLOR   = 0                     ; transparent color index.
 SCREEN_W            = 320                   ; screen resolution (vga mode 13h).
 SCREEN_H            = 200                   ;
 TIMER_RES           = 5                     ; timer resolution, in milliseconds.
 TIMER_TICKS_PER_SEC = 200                   ; how many times per second the timer interrupt is fired.
+FONT_HEIGHT         = 6                     ; how many px tall the font is.
+PALA_W              = 16                    ; dimensions of a pala texture.
+PALA_H              = 16
 
 format MZ
 
@@ -52,8 +55,8 @@ mov gs,ax
 call Load_Palat_File
 cmp al,0
 jne .got_file
+mov dx,palat_file_name                      ; if we failed to load the palat file, display an error message and exit.
 mov ah,9h
-mov dx,palat_file_name
 int 21h
 mov dx,err_palat_load
 int 21h
@@ -61,26 +64,21 @@ jmp .exit
 .got_file:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; initialize vga mode to 13h for graphics.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Set_Video_Mode_13H
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; enable the mouse. the routine will return 0 in ax if it failed.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Enable_Mouse
 cmp ax,0
 jne .got_mouse
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; if we didn't manage to acquire the mouse, display an error message and exit the program.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Set_Video_Mode_To_Text
-mov dx,err_mouse_init
+mov dx,err_mouse_init                       ; if we fialed to acquire the mouse, display an error message and exit.
 mov ah,9h
 int 21h
 jmp .exit
 .got_mouse:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; initialize vga mode to 13h for graphics.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+call Set_Video_Mode_13H
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; set the game's palette.
@@ -92,6 +90,9 @@ call Set_Palette_13H
 ; enable our own timer interrupt.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Set_Timer_Interrupt_Handler
+
+call Draw_Color_Selector
+call Draw_Palat_Selector
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; loop until the user presses the right mouse button.
@@ -174,19 +175,17 @@ segment @BASE_DATA
     mouse_pos_xy dd 0                       ; the x and y coordinates of the mouse cursor.
     mouse_buttons dw 0                      ; mouse button status.
 
-data_read dw 5                      ; how much data was read.
-
     ; editing.
     pen_color db 4                          ; which palette index the pen is painting with.
-
 
     ; STRINGS
     ; error messages.
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
     err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
     ; ui messages.
-    pala_file_str db "cPALAT.001",0
-    palat_file_name db "PALAT.001",0,0ah,0dh,"$"
+    project_name_str db "cHERPATOI",0
+    pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
+    palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
 
     ; timer-related.
     int_8h_handler dd 10203040h             ; address of dos's interrupt handler. first word is the segment, second word is the address.

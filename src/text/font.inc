@@ -47,21 +47,21 @@ font	dw 0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0f
         dw 00000h,00001h,00001h,0013eh,00140h,00001h,0013fh,00140h,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [E].
         dw 00000h,00001h,00001h,0013eh,00140h,00001h,00001h,0013eh,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [F].
         dw 00000h,00001h,0013fh,00140h,00002h,0013eh,00002h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [G].
-        dw 00140h,00140h,00002h,0013eh,00001h,00001h,0013eh,00002h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [H].
+        dw 00000h,00002h,0013eh,00002h,0013eh,00001h,00001h,0013eh,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [H].
         dw 00000h,00001h,00001h,0013fh,00140h,00140h,0013fh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [I].
         dw 00002h,00140h,00140h,0013eh,00002h,0013eh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [J].
         dw 00000h,00002h,0013eh,00002h,0013eh,00001h,0013fh,00002h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [K].
         dw 00000h,00140h,00140h,00140h,00140h,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [L].
         dw 00000h,00002h,0013eh,00001h,00001h,0013eh,00002h,0013eh,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [M].
         dw 00280h,00001h,0013fh,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [N].
-        dw 00140h,00001h,0013fh,00002h,0013eh,00002h,0013eh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [O].
+        dw 00001h,0013fh,00002h,0013eh,00002h,0013eh,00002h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [O].
         dw 00000h,00001h,0013fh,00002h,0013eh,00001h,0013fh,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [P].
-        dw 00000h,00001h,0013fh,00002h,0013eh,00002h,0013eh,00001h,00001h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [Q].
-        dw 00001h,0013fh,00002h,0013eh,00002h,0013eh,00001h,0013fh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [R].
+        dw 00000h,00001h,00001h,0013eh,00002h,0013eh,00002h,0013eh,00001h,00001h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [Q].
+        dw 00000h,00001h,0013fh,00002h,0013eh,00001h,0013fh,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [R].
         dw 00001h,0013fh,00141h,00141h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [S].
         dw 00000h,00001h,00001h,0013fh,00140h,00140h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [T].
-        dw 00140h,00140h,00002h,0013eh,00002h,0013fh,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [U].
-        dw 00140h,00002h,0013eh,00002h,0013eh,00002h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [V].
+        dw 00000h,00002h,0013eh,00002h,0013eh,00002h,0013eh,00002h,0013eh,00001h,00001h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [U].
+        dw 00000h,00002h,0013eh,00002h,0013eh,00002h,0013eh,00002h,0013fh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [V].
         dw 00000h,00002h,0013eh,00002h,0013eh,00001h,00001h,0013eh,00001h,00001h,0013fh,00001h,0ffffh,0ffffh,0ffffh,0ffffh ; [W].
         dw 00000h,00002h,0013eh,00002h,0013fh,0013fh,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [X].
         dw 00000h,00002h,0013eh,00002h,0013fh,00140h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [Y].

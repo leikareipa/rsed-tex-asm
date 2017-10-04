@@ -8,19 +8,97 @@
 ;;; Draws all the editable pala textures.
 ;;;
 ;;; EXPECTS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;; DESTROYS:
-;;;     (- unknown)
+;;;     - ax, bx, cx, si, di
 ;;; RETURNS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Palat_Selector:
+    .NUM_THUMBNAIL_ROWS     = 23
+    .NUM_THUMBNAIL_COLUMNS  = 11
+    .THUMBNAIL_SIZE         = 8
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; print the name of the palat file in the top right corner of the selector.
+    ; print the name of the project and palat file in the top right corner of the selector.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,(SCREEN_W * 2) + 58
+    mov di,(SCREEN_W * 2) + 4
+    mov si,project_name_str
+    call Draw_String
+
+    mov di,(SCREEN_W * 2) + 57
     mov si,pala_file_str
     call Draw_String
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the thumbnails.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,(SCREEN_W * (FONT_HEIGHT + 2)) + 3
+    xor ax,ax
+    mov cx,.NUM_THUMBNAIL_ROWS
+    .column:
+        push cx
+        mov cx,.NUM_THUMBNAIL_COLUMNS
+        .row:
+            call Draw_Pala_Thumbnail
+            inc ax
+            add di,.THUMBNAIL_SIZE
+            loop .row
+        pop cx
+        add di,2560 - (.NUM_THUMBNAIL_COLUMNS * .THUMBNAIL_SIZE) ; move to the start of the next thumbnail row on the screen.
+        loop .column
+
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+2
+    mov si,pala_file_str
+    call Draw_String
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws a single pala texture as a 8x8 thumbnail.
+;;;
+;;; EXPECTS:
+;;;     - es:di to point to the first pixel in the screen buffer to draw to
+;;;     - ax to give the id of the pala texture to be drawn.
+;;; DESTROYS:
+;;;     - bx
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Pala_Thumbnail:
+    .THUMBNAIL_SIZE         = 8
+
+    push di
+    push cx
+    push ax
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the starting offset of the given pala in the pala data array.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bx,(PALA_W * PALA_H)
+    mul bx
+    mov bx,ax                               ; bx stores the offset.
+
+    mov cx,7
+    .row:
+        push cx
+        mov cx,(.THUMBNAIL_SIZE - 1)        ; we subtract 1 to get an outline effect.
+        add bx,2                            ; pre-add to these to get that outline effect.
+        inc di                              ;
+        .column:
+            mov al,[gs:pala_data+bx]        ; get the next pixel from the pala.
+            mov byte [es:di],al             ; draw.
+            inc di
+            add bx,2
+            loop .column
+        add di,(SCREEN_W - 8)               ; move down to the next scanline.
+        add bx,16                           ; skip a line in the pala, since we're doing 8x8 instead of 16x16.
+        pop cx
+        loop .row
+
+    pop ax
+    pop cx
+    pop di
 
     ret
 
@@ -36,13 +114,9 @@ Draw_Palat_Selector:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Color_Selector:
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; constants.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .SIDE_OFFSET    = 13
     .SWATCH_WIDTH   = 8
     .SWATCH_HEIGHT  = 6
-    .FONT_HEIGHT    = 6
 
     sti                                     ; make sure the direction flag points forward.
 
@@ -70,14 +144,14 @@ Draw_Color_Selector:
         mov cl,'d'                          ; text color.
         call Draw_Unsigned_Integer
         inc bx
-        add di,SCREEN_W * .FONT_HEIGHT
+        add di,SCREEN_W * FONT_HEIGHT
         cmp bx,32
         jne .draw_labels
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the currently selected color's label with a brighter color.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax, (.FONT_HEIGHT * SCREEN_W)
+    mov ax, (FONT_HEIGHT * SCREEN_W)
     movzx bx, [pen_color]
     mul bx                                  ; ax = y offset of the start of the swatch's label.
     mov di,(SCREEN_W * 4) + (SCREEN_W - .SIDE_OFFSET) + 2   ; x,y coordinate of the first color swatch.
@@ -101,9 +175,6 @@ Draw_Color_Selector:
 Draw_Color_Swatch:
     push cx
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; constants.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .SWATCH_WIDTH   = 8
     .SWATCH_HEIGHT  = 6
 
