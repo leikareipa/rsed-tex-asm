@@ -35,8 +35,32 @@ include "graphics/draw_routines.asm"
 include "timer/timer.asm"
 include "input/mouse/mouse.asm"
 include "file/file.asm"
+include "cmd_line/cmd_line.asm"
 
 start:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; parse the command line.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+call Parse_Command_Line
+cmp al,1
+je .cmd_line_parse_success
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; if we failed to parse the command line, display an error message and exit.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov dx,err_commd_line_malformed
+mov ah,9h
+int 21h
+mov dx,cmd_argument_info_str
+mov ah,9h
+int 21h
+jmp .exit
+
+.cmd_line_parse_success:
+;mov dx,project_name_str
+;mov ah,9h
+;int 21h
+;jmp .exit
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; assign segments.
 ; cs = code, ds = data, es = video memory buffer, fs = copy of ds, gs = palat file data as a flat array.
@@ -171,6 +195,8 @@ int 21h
 
 
 segment @BASE_DATA
+    project_name db 0,0,0,0,0,0,0,0,0,"$"            ; the name of the project, i.e. the name on its files, etc.
+
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
     mouse_pos_xy dd 0                       ; the x and y coordinates of the mouse cursor.
     mouse_buttons dw 0                      ; mouse button status.
@@ -182,8 +208,12 @@ segment @BASE_DATA
     ; error messages.
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
     err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
+    err_commd_line_malformed db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
+
     ; ui messages.
-    project_name_str db "cHERPATOI",0
+    cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh
+                          db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
+    project_name_str db "c",0,0,0,0,0,0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
 

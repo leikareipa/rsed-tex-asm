@@ -16,5 +16,6 @@ DISTFILES += \
     src/graphics/palette.inc \
     src/graphics/vga.asm \
     src/graphics/draw_routines.asm \
-    src/file/file.asm
+    src/file/file.asm \
+    src/cmd_line/cmd_line.asm
 
