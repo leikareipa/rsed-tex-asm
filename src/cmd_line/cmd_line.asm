@@ -48,7 +48,7 @@ Parse_Command_Line:
         jg .cmd_line_parse_fail
 
         mov [project_name+si],al                ; save the converted character in the project name string.
-        mov [project_name_str+si+1],al                ; save the converted character in the printable project name string.
+        mov [project_name_str+si+1],al          ; save the converted character in the printable project name string.
         inc si
         inc bx
         loop .cmd_space

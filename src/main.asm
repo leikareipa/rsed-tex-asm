@@ -44,6 +44,7 @@ start:
 call Parse_Command_Line
 cmp al,1
 je .cmd_line_parse_success
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; if we failed to parse the command line, display an error message and exit.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

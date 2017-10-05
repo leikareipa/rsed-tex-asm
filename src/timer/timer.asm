@@ -97,18 +97,31 @@ Set_Timer_Interrupt_Handler:
     ret
 
 Restore_Timer_Interrupt_Handler:
-    push ds
+    cli
 
-    mov ax,word [int_8h_handler]
-    mov ds,ax
+    push ds
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; tell dos to go back to using its own timer interrupt handler.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax,word [fs:int_8h_handler+2]          ; set to restore the timer segment.
+    mov ds,ax
+    mov dx,word [fs:int_8h_handler]            ; set to restore the timer address.
     mov ax,2508h
-    mov dx,word [int_8h_handler+2]      ; restore dos's original timer handler.
     int 21h
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; set the timer to run at its normal dos rate, i.e. at about 18 hz.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov al,36h
+    out 43h,al
+    mov al,0
+    out 40h,al
+    mov al,0
+    out 40h,al
+
     pop ds
+
+    sti
 
     ret
