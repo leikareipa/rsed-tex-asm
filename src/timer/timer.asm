@@ -6,6 +6,7 @@
 
 Handle_Timer_Interrupt:
     cli                                     ; protect this code from re-entrancy.
+
     push ax                                 ; custom interrupts need to reserve all registers they change.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,7 +54,9 @@ Handle_Timer_Interrupt:
 
     .exit:
     pop ax
+
     sti
+
     iret
 
 Set_Timer_Interrupt_Handler:
@@ -88,11 +91,6 @@ Set_Timer_Interrupt_Handler:
     out 40h,al
     mov al,13h
     out 40h,al
-
-    ;mov ax,1193182/TIMER_TICKS_PER_SEC
-    ;out 40h,al
-    ;shr ax,8
-    ;out 40h,al
 
     ret
 

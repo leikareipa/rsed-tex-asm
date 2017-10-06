@@ -5,6 +5,205 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws the currently selected pala as a large, paintable version in the middle of the screen.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Pala_Editor:
+    mov di,(SCREEN_W * 4) + 100
+    movzx ax,[selected_pala]
+    call Draw_Pala_Enlarged_12X
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws a single pala texture as a custom-sized thumbnail.
+;;;
+;;; EXPECTS:
+;;;     - es:di to point to the first pixel in the screen buffer to draw to
+;;;     - ax to give the id of the pala texture to be drawn.
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Pala_Enlarged_4X:
+    .MAGNIF = 4
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the starting offset of the given pala in the pala data array.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,(PALA_W * PALA_H)
+    mul si
+    mov si,ax                                       ; si stores the offset.
+
+    mov cx,PALA_H
+    .column:
+        push cx
+        mov cx,PALA_W
+        .row:
+            mov ebx,dword [gs:pala_data+si]         ; get the next pixel from the pala.
+            add si,1
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; duplicate the pixel 4x into eax.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            mov bh,bl
+            mov ax,bx
+            rol eax,16
+            mov ax,bx
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; draw an enlarged pixel.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            push di
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            pop di
+
+            add di,.MAGNIF
+            loop .row
+        add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF))          ; move down to the next scanline.
+        pop cx
+        loop .column
+
+    ret
+Draw_Pala_Enlarged_8X:
+    .MAGNIF = 8
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the starting offset of the given pala in the pala data array.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,(PALA_W * PALA_H)
+    mul si
+    mov si,ax                                       ; si stores the offset.
+
+    mov cx,PALA_H
+    .column:
+        push cx
+        mov cx,PALA_W
+        .row:
+            mov ebx,dword [gs:pala_data+si]         ; get the next pixel from the pala.
+            add si,1
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; duplicate the pixel 4x into eax.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            mov bh,bl
+            mov ax,bx
+            rol eax,16
+            mov ax,bx
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; draw an enlarged pixel.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            push di
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            add di,(SCREEN_W - .MAGNIF)
+            stosd
+            stosd
+            pop di
+
+            add di,.MAGNIF
+            loop .row
+        add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF))          ; move down to the next scanline.
+        pop cx
+        loop .column
+
+    ret
+Draw_Pala_Enlarged_12X:
+    .MAGNIF = 12
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the starting offset of the given pala in the pala data array.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,(PALA_W * PALA_H)
+    mul si
+    mov si,ax                                       ; si stores the offset.
+
+    mov cx,PALA_H
+    .column:
+        push cx
+        mov cx,PALA_W
+        .row:
+            mov ebx,dword [gs:pala_data+si]         ; get the next pixel from the pala.
+            add si,1
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; duplicate the pixel 4x into eax.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            mov bh,bl
+            mov ax,bx
+            rol eax,16
+            mov ax,bx
+
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ; draw an enlarged pixel.
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            push di
+            mov dx,3
+            .do:
+                stosd
+                stosd
+                stosd
+                add di,(SCREEN_W - .MAGNIF)
+                stosd
+                stosd
+                stosd
+                add di,(SCREEN_W - .MAGNIF)
+                stosd
+                stosd
+                stosd
+                add di,(SCREEN_W - .MAGNIF)
+                stosd
+                stosd
+                stosd
+                add di,(SCREEN_W - .MAGNIF)
+                sub dx,1
+                cmp dx,0
+                jne .do
+            pop di
+
+            add di,.MAGNIF
+            loop .row
+        add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF)) ; move down to the next scanline.
+        pop cx
+        loop .column
+
+    ret
+
+Draw_Scaled_Pala_Pixel:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Draws all the editable pala textures.
 ;;;
 ;;; EXPECTS:
@@ -22,7 +221,11 @@ Draw_Palat_Selector:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print the name of the project and palat file in the top right corner of the selector.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,(SCREEN_W * 2) + 4
+    mov di,(SCREEN_W * 3) + 4
+    mov si,str_unsaved_changes
+    call Draw_String
+
+    mov di,(SCREEN_W * 2) + 9
     mov si,project_name_str
     call Draw_String
 
@@ -41,7 +244,7 @@ Draw_Palat_Selector:
         mov cx,.NUM_THUMBNAIL_COLUMNS
         .row:
             call Draw_Pala_Thumbnail
-            inc ax
+            add ax,1
             add di,.THUMBNAIL_SIZE
             loop .row
         pop cx
@@ -79,20 +282,20 @@ Draw_Pala_Thumbnail:
     mul bx
     mov bx,ax                               ; bx stores the offset.
 
-    mov cx,7
+    mov cx,(.THUMBNAIL_SIZE - 1)            ; we subtract 1 to get a horizontal outline effect.
     .row:
         push cx
-        mov cx,(.THUMBNAIL_SIZE - 1)        ; we subtract 1 to get an outline effect.
+        mov cx,(.THUMBNAIL_SIZE - 1)        ; we subtract 1 to get a vertical outline effect.
         add bx,2                            ; pre-add to these to get that outline effect.
-        inc di                              ;
+        add di,1                            ;
         .column:
             mov al,[gs:pala_data+bx]        ; get the next pixel from the pala.
             mov byte [es:di],al             ; draw.
-            inc di
+            add di,1
             add bx,2
             loop .column
-        add di,(SCREEN_W - 8)               ; move down to the next scanline.
-        add bx,16                           ; skip a line in the pala, since we're doing 8x8 instead of 16x16.
+        add di,(SCREEN_W - .THUMBNAIL_SIZE) ; move down to the next scanline.
+        add bx,PALA_W                       ; skip a line in the pala, since we're doing 8x8 instead of 16x16.
         pop cx
         loop .row
 
@@ -107,7 +310,7 @@ Draw_Pala_Thumbnail:
 ;;; Each swatch is 8 px wide and 6 px tall.
 ;;;
 ;;; EXPECTS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;; DESTROYS:
 ;;;     - di, ax, bx
 ;;; RETURNS:
@@ -131,7 +334,7 @@ Draw_Color_Selector:
     mov al,0
     .draw_swatches:
         call Draw_Color_Swatch
-        inc al
+        add al,1
         cmp al,32
         jne .draw_swatches
 
@@ -143,7 +346,7 @@ Draw_Color_Selector:
     .draw_labels:
         mov cl,'d'                          ; text color.
         call Draw_Unsigned_Integer
-        inc bx
+        add bx,1
         add di,SCREEN_W * FONT_HEIGHT
         cmp bx,32
         jne .draw_labels
@@ -307,8 +510,8 @@ Draw_Mouse_Cursor:
             .skip_pixel:
             dec dh                          ; keep track of how far into the adjusted image width we've drawn,
             jz .next_row                    ; and if we've fully drawn up to the adjusted width, stop and move to the next row.
-            inc di
-            inc si
+            add di,1
+            add si,1
             loop .draw_img_x
         .next_row:
         add di,cx                           ; in case we skipped pixels due to the image being outside the screen borders,

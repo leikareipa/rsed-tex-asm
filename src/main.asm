@@ -54,7 +54,7 @@ int 21h
 mov dx,cmd_argument_info_str
 mov ah,9h
 int 21h
-jmp .exit
+;jmp .exit
 
 .cmd_line_parse_success:
 ;mov dx,project_name_str
@@ -116,8 +116,12 @@ call Set_Palette_13H
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Set_Timer_Interrupt_Handler
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; fill the video buffer with the ui's controls.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Draw_Color_Selector
 call Draw_Palat_Selector
+call Draw_Pala_Editor
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; loop until the user presses the right mouse button.
@@ -131,6 +135,7 @@ call Draw_Palat_Selector
 
     call Draw_Color_Selector
     call Draw_Palat_Selector
+    call Draw_Pala_Editor
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
@@ -196,13 +201,14 @@ int 21h
 
 
 segment @BASE_DATA
-    project_name db 0,0,0,0,0,0,0,0,0,"$"            ; the name of the project, i.e. the name on its files, etc.
+    project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project, i.e. the name on its files, etc.
 
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
     mouse_pos_xy dd 0                       ; the x and y coordinates of the mouse cursor.
     mouse_buttons dw 0                      ; mouse button status.
 
     ; editing.
+    selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
     pen_color db 4                          ; which palette index the pen is painting with.
 
     ; STRINGS
@@ -216,6 +222,8 @@ segment @BASE_DATA
                           db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
     project_name_str db "c",0,0,0,0,0,0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
+    str_unsaved_changes db "f*",0
+
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
 
     ; timer-related.
