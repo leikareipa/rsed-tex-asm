@@ -17,8 +17,8 @@ TIMER_TICKS_PER_SEC = 200                   ; how many times per second the time
 FONT_HEIGHT         = 6                     ; how many px tall the font is.
 PALA_W              = 16                    ; dimensions of a pala texture.
 PALA_H              = 16
-CURSOR_W            = 10                    ; dimensions of the mouse cursor.
-CURSOR_H            = 13
+CURSOR_W            = 10                    ; dimensions of the mouse cursor. NOTE: neither the width nor height should be more than 16 px.
+CURSOR_H            = 13                    ; NOTE: if you change the cursor width, you need to change the cursor drawing routines as well.
 
 format MZ
 
@@ -169,7 +169,7 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;jnz .skip_fps_display                   ; if the mouse isn't at the upper border, don't print out the fps display.
     movzx bx,[frame_time]
     mov cl,'g'
-    mov di,308
+    mov di,628
     call Draw_Unsigned_Integer
     mov [frame_time],0
     .skip_fps_display:
@@ -179,11 +179,11 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov bx,word [mouse_pos_xy]
     mov cl,'g'
-    mov di,(SCREEN_W * 195) + 70
+    mov di,(SCREEN_W * 1) + 70
     call Draw_Unsigned_Integer_Long
     mov bx,word [mouse_pos_xy+2]
     mov cl,'g'
-    mov di,(SCREEN_W * 195) + 50
+    mov di,(SCREEN_W * 1) + 50
     call Draw_Unsigned_Integer_Long
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -431,79 +431,82 @@ Draw_Color_Swatch:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Mouse_Cursor:
-    push si
-    push di
+    ;push si
+    ;push di
 
-    mov bx,word [ds:si]                     ; bl = image width, bh = image height.
-    mov dl,bl                               ; make a copy of the image width, for adjusting the size if the cursor is outside the screen (see below).
-    add si,2
+    add si,2                                ; skip the cursor image's header.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; make sure the image doesn't go past the borders of the screen. if it seems it would,
-    ; adjust its bounding rectangle.
+    ; get the mouse cursor's x,y coordinates. x will be placed in edx, y in ecx.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    .check_height:
-    xor dx,dx                               ; clear the remainder buffer for the upcoming div.
-    mov ax,di
-    mov cx,SCREEN_W
-    div cx                                  ; ax / 320 to get the y coordinate (it'll fit into cl).
-    movzx cx,bh
-    mov dx,ax                               ; y coordinate += image height.
-    add dx,cx                               ;
-    sub dx,SCREEN_H
-    js .check_width                         ; if y coordinate + image height < 200, move on, otherwise,
-    sub cx,dx                               ; set the image's height such that it no longer extends below the screen's bottom border.
-    mov bh,cl                               ; bh = adjusted image height.
+    mov ecx,[mouse_pos_xy]
+    mov edx,ecx
+    shr edx,16
 
-    .check_width:
-    xor dx,dx                               ; clear the remainder buffer for the upcoming mul.
-    mov cx,SCREEN_W
-    mul cx                                  ; 320 * floor(ax / 320),
-    mov dx,di                               ; which gives us the x coordinate in dx,
-    sub dx,ax                               ; when we subtract it from the full index (di).
-    movzx cx,bl                             ; store image width in cx.
-    add dx,cx                               ; dx = image x offset + image width.
-    sub dx,SCREEN_W
-    js .set_normal_width                    ; if x coordinate + image width < 320, move on, otherwise,
-    sub cx,dx                               ; set the image's width such that it no longer extends below the screen's bottom border.
-    mov dl,cl                               ; dl = adjusted image width.
-    jmp .draw_image
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; see whether the cursor is fully inside the screen, and if not, alter the size of its rectangle so we don't
+    ; draw outside of the screen borders.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .check_x:
+    cmp dx,(SCREEN_W - CURSOR_W)
+    jl .keep_x                              ; if mouse_x < (screen_w - cursor_w).
+    mov ax,SCREEN_W                         ; otherwise, set the cursor image's width to be the remainder.
+    sub ax,dx
+    mov dl,al
+    jmp .check_y
+    .keep_x:
+    mov dl,CURSOR_W
 
-    .set_normal_width:
-    mov dl,bl
+    .check_y:
+    cmp cx,(SCREEN_H - CURSOR_H)
+    int 3
+    jl .keep_y                              ; if mouse_y < (screen_h - cursor_h).
+    mov ax,SCREEN_H                         ; otherwise, set the cursor image's height to be the remainder.
+    sub ax,cx
+    jmp .assign_adjusted_size
+    .keep_y:
+    mov al,CURSOR_H
+
+    .assign_adjusted_size:                  ; set the background's new size.
+    mov bl,dl
+    mov bh,al
+
+    mov dx,(CURSOR_W + 1)
+    movzx ax,bl
+    sub dx,ax                               ; dx == the number of pixels we skip on each horizontal row.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the image.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .draw_image:
-    movzx cx,bh                             ; loop over each row in the image.
+    mov ch,bh                               ;  loop over each row in the image.
     .draw_img_y:
-        push cx
-        movzx cx,bl                         ; loop over each column on this row.
-        mov dh,dl                           ; copy the adjusted image width into a scratch register, where it can be modified while maintaining the original.
+        mov cl,bl                           ; loop over each column on this row.
+        ;mov dh,CURSOR_W                     ; we keep track of
         .draw_img_x:
             mov al,[ds:si]                  ; load the next pixel from the cursor image buffer (ds:si).
             cmp al,TRANSPARENT_COLOR
             je .skip_pixel                  ; don't write transparent pixels.
             mov [es:di],al                  ; write the pixel into the video buffer (es:di).
             .skip_pixel:
-            dec dh                          ; keep track of how far into the adjusted image width we've drawn,
+            sub cl,1                        ; keep track of how far into the adjusted image width we've drawn,
             jz .next_row                    ; and if we've fully drawn up to the adjusted width, stop and move to the next row.
             add di,1
             add si,1
-            loop .draw_img_x
+            ;sub dh,1
+            jmp .draw_img_x
         .next_row:
-        add di,cx                           ; in case we skipped pixels due to the image being outside the screen borders,
-        add si,cx                           ; adjust the indices to account for that skipping. if no skipping was done, cx == 0.
+        ;movzx ax,dh
+        add di,dx                           ; in case we skipped pixels due to the image being outside the screen borders,
+        add si,dx                           ; adjust the indices to account for that skipping.
         add di,SCREEN_W                     ; move to the next row on the screen.
-        movzx cx,bl                         ; move back to the start of the image's next row on the screen.
-        sub di,cx                           ;
-        pop cx
-        loop .draw_img_y
+        sub di,CURSOR_W                     ; move back to the start of the image's next row on the screen.
+        sub ch,1
+        jnz .draw_img_y
 
     .done:
-    pop di
-    pop si
+    ;pop di
+    ;pop si
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -526,12 +529,54 @@ Save_Mouse_Cursor_Background:
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
     mov si,cursor_background                ; we'll save the pixels into gs:si.
 
+    mov edx,ecx
+    shr edx,16                              ; edx is now the mouse's x coordinate, and ecx its y coordinate.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; see whether the cursor is fully inside the screen, and if not, alter the size of its rectangle so we don't
+    ; draw outside of the screen borders.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .check_x:
+    cmp dx,(SCREEN_W - CURSOR_W)
+    jl .keep_x                              ; if mouse_x < (screen_w - cursor_w).
+    mov ax,SCREEN_W                         ; otherwise, set the cursor image's width to be the remainder.
+    sub ax,dx
+    mov dl,al
+    jmp .check_y
+    .keep_x:
+    mov dl,CURSOR_W
+
+    .check_y:
+    cmp cx,(SCREEN_H - CURSOR_H)
+    int 3
+    jl .keep_y                              ; if mouse_y < (screen_h - cursor_h).
+    mov ax,SCREEN_H                         ; otherwise, set the cursor image's height to be the remainder.
+    sub ax,cx
+    jmp .assign_adjusted_size
+    .keep_y:
+    mov al,CURSOR_H
+
+    .assign_adjusted_size:                  ; set the background's new size.
+    mov bl,dl
+    mov bh,al
+    movzx dx,dl
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; if the cursor was fully inside the screen, we can use reckless filling methods. otherwise, we fill pixel by pixel.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp bl,CURSOR_W
+    jl .careful
+    cmp bh,CURSOR_H
+    jl .careful
+    jmp .reckless
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; save the background. note that we omit to check for access outside the boundaries of the screen.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cl,CURSOR_H
+    .careful:
+    mov cl,bh
     .column:
-        mov ch,CURSOR_W
+        mov ch,bl
         .row:
             mov al,[es:di]                  ; load a pixel from the screen.
             mov [gs:si],al                  ; save the pixel into the pixel buffer.
@@ -539,10 +584,39 @@ Save_Mouse_Cursor_Background:
             add si,1
             sub ch,1
             jnz .row
-        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        add di,(SCREEN_W)        ; move to the next scanline.
+        sub di,dx                ; move to the start of the cursor's image position on that scanline.
         sub cl,1
         jnz .column
+    jmp .exit
 
+    .reckless:
+    mov cl,CURSOR_H
+    .row2:
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ; move 10 bytes per row - assumes the cursor is 10 px wide.
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        mov eax,[es:di]
+        mov [gs:si],eax
+        add di,4
+        add si,4
+
+        mov eax,[es:di]
+        mov [gs:si],eax
+        add di,4
+        add si,4
+
+        mov ax,[es:di]
+        mov [gs:si],ax
+        add di,2
+        add si,2
+
+        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        sub cl,1
+
+        jnz .row2
+
+    .exit:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -566,12 +640,54 @@ Redraw_Mouse_Cursor_Background:
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
     mov si,cursor_background                ; the background pixel buffer.
 
+    mov edx,ecx
+    shr edx,16                              ; edx is now the mouse's x coordinate, and ecx its y coordinate.
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; redraw the cursor. note that we omit to check for access outside the boundaries of the screen.
+    ; see whether the cursor is fully inside the screen, and if not, alter the size of its rectangle so we don't
+    ; draw outside of the screen borders.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cl,CURSOR_H
+    .check_x:
+    cmp dx,(SCREEN_W - CURSOR_W)
+    jl .keep_x                              ; if mouse_x < (screen_w - cursor_w).
+    mov ax,SCREEN_W                         ; otherwise, set the cursor image's width to be the remainder.
+    sub ax,dx
+    mov dl,al
+    jmp .check_y
+    .keep_x:
+    mov dl,CURSOR_W
+
+    .check_y:
+    cmp cx,(SCREEN_H - CURSOR_H)
+    jl .keep_y                              ; if mouse_y < (screen_h - cursor_h).
+    mov ax,SCREEN_H                         ; otherwise, set the cursor image's height to be the remainder.
+    sub ax,cx
+    jmp .assign_adjusted_size
+    .keep_y:
+    mov al,CURSOR_H
+
+    .assign_adjusted_size:                  ; set the background's new size.
+    mov bl,dl
+    mov bh,al
+    movzx dx,dl
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; if the cursor was fully inside the screen, we can use reckless filling methods. otherwise, we fill pixel by pixel.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp bl,CURSOR_W
+    jl .careful
+    cmp bh,CURSOR_H
+    jl .careful
+    jmp .reckless
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; redraw the cursor. this version fills in pixel by pixel, and only to the adjusted size
+    ; of the cursor's rectangle (see above).
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .careful:
+    mov cl,bh
     .column:
-        mov ch,CURSOR_W
+        mov ch,bl
         .row:
             mov al,[gs:si]                  ; load a pixel from the buffer.
             mov [es:di],al                  ; save the pixel into the video buffer.
@@ -579,8 +695,40 @@ Redraw_Mouse_Cursor_Background:
             add si,1
             sub ch,1
             jnz .row
-        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        add di,(SCREEN_W)        ; move to the next scanline.
+        sub di,dx
         sub cl,1
         jnz .column
+    jmp .exit
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; redraw the cursor. this version fills in 10 pixels per row. note that it assumes the cursor to
+    ; be 10 px wide.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .reckless:
+    mov cl,CURSOR_H
+    .row2:
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ; move 10 bytes per row - assumes the cursor is 10 px wide.
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        mov eax,[gs:si]
+        mov [es:di],eax
+        add di,4
+        add si,4
+
+        mov eax,[gs:si]
+        mov [es:di],eax
+        add di,4
+        add si,4
+
+        mov ax,[gs:si]
+        mov [es:di],ax
+        add di,2
+        add si,2
+
+        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        sub cl,1
+        jnz .row2
+
+    .exit:
     ret
