@@ -144,6 +144,57 @@ Draw_Unsigned_Integer:
 
     ret
 
+Draw_Unsigned_Integer_Long:
+    push bx
+
+    mov byte [tmp_int_str],cl               ; save the color code at the beginning of the string.
+    mov eax,0a0064h                         ; low 16 bits = 100, high 16 bits = 10.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; extract the most significant digit from the value. that is, keep subtracting 100 from the value
+    ; until the value is below 100, and the number of times we needed to subtract is the digit.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov cl,'0'
+    .100:
+        cmp bx,ax                           ; ax < 100?
+        jb .100_done
+        sub bx,ax
+        inc cl
+        jmp .100
+    .100_done:
+    mov byte [tmp_int_str+1],cl
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; extract the second-most significant digit from the value.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    shr eax,16                              ; ax = 10.
+    mov ch,'0'
+    .10:
+        cmp bx,ax                           ; ax < 10?
+        jb .10_done
+        sub bx,ax
+        inc ch
+        jmp .10
+    .10_done:
+    mov word [tmp_int_str+1],cx             ; cl == most significant digit, ch == second-most significant digit.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; extract the third-most significant digit from the value.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .1:
+    add bl,'0'
+    mov byte [tmp_int_str+3],bl             ; bl == third-most significant digit.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; print the finished string to the screen and return.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,tmp_int_str
+    call Draw_String
+
+    pop bx
+
+    ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Converts an unsigned integer (valid range: 0-999) into a string.
 ;;;

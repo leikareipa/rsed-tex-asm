@@ -8,16 +8,33 @@
 ;;; Draws the currently selected pala as a large, paintable version in the middle of the screen.
 ;;;
 ;;; EXPECTS:
-;;;     (- unknown)
+;;;     - ds to be the general data segment.
 ;;; DESTROYS:
-;;;     (- unknown)
+;;;     - ax, si
 ;;; RETURNS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Pala_Editor:
-    mov di,(SCREEN_W * 4) + 100
+    mov di,(SCREEN_W * 4) + 99                      ; positioning of the editor on screen.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the currently selected pala.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     movzx ax,[selected_pala]
+    .12x:
+    cmp [magnification],3
+    jne .8x
     call Draw_Pala_Enlarged_12X
+    jmp .exit
+    .8x:
+    cmp [magnification],2
+    jne .4x
+    call Draw_Pala_Enlarged_8X
+    jmp .exit
+    .4x:
+    call Draw_Pala_Enlarged_4X
+
+    .exit:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,45 +420,7 @@ Draw_Color_Swatch:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws an image on screen in VGA mode 13h.
-;;;
-;;; EXPECTS:
-;;;     - ds:si to point to the beginning of the image's pixel buffer
-;;;	- es:di to point to the location in video memory where the top left corner of the image will be drawn
-;;;     - the first byte of the image should give the width of the image, and the second by the image's height.
-;;; DESTROYS:
-;;;     - eax, bx, cx
-;;; RETURNS:
-;;;     (- nothing)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Draw_Image:
-    push si
-    push di
-    mov bx,word [ds:si]                     ; bl = image width, bh = image height.
-    add si,2
-    movzx cx,bh                             ; loop over each row in the image.
-    .draw_img_y:
-        push cx
-        movzx cx,bl                         ; loop over each column on this row.
-        .draw_img_x:
-            lodsb                           ; load the next pixel from the image buffer (ds:si), and place it in al. also increments si.
-            stosb                           ; write the pixel into the video buffer (es:di). also increments di.
-            loop .draw_img_x
-        add di,SCREEN_W                     ; move to the next row on the screen (-1 for obliqueness).
-        movzx cx,bl                         ; move back to the start of the image's next row on the screen.
-        sub di,cx                           ;
-        pop cx
-        loop .draw_img_y
-    pop di
-    pop si
-    ret
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws an image on screen in VGA mode 13h, skipping pixels with a palette index of 15.
-;;; The reason this subroutine is called Draw_Mouse_Cursor is that it checks to make sure no attempts are made to
-;;; draw past the borders of the screen.
-;;;
-;;; Note that the maximum image size is 127 x 127.
+;;; Draws the mouse cursor, with alpha. Checks to make sure no out-of-screen drawing is done.
 ;;;
 ;;; EXPECTS:
 ;;;     - ds:si to point to the beginning of the image's pixel buffer
@@ -503,7 +482,7 @@ Draw_Mouse_Cursor:
         movzx cx,bl                         ; loop over each column on this row.
         mov dh,dl                           ; copy the adjusted image width into a scratch register, where it can be modified while maintaining the original.
         .draw_img_x:
-            mov al,[ds:si]                  ; load the next pixel from the image buffer (ds:si).
+            mov al,[ds:si]                  ; load the next pixel from the cursor image buffer (ds:si).
             cmp al,TRANSPARENT_COLOR
             je .skip_pixel                  ; don't write transparent pixels.
             mov [es:di],al                  ; write the pixel into the video buffer (es:di).
@@ -525,4 +504,83 @@ Draw_Mouse_Cursor:
     .done:
     pop di
     pop si
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Stores the mouse's current background into a buffer.
+;;;
+;;; EXPECTS:
+;;;     - gs to point to the pixel buffer's segment.
+;;;	- es to point to the video memory buffer's segment.
+;;; DESTROYS:
+;;;     - al, ecx, di, si
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Save_Mouse_Cursor_Background:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; map the mouse's x,y position into an offset in the video memory buffer.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ecx,[mouse_pos_xy]
+    call ECX_To_VGA_Mem_Offset
+    add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
+    mov si,cursor_background                ; we'll save the pixels into gs:si.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; save the background. note that we omit to check for access outside the boundaries of the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov cl,CURSOR_H
+    .column:
+        mov ch,CURSOR_W
+        .row:
+            mov al,[es:di]                  ; load a pixel from the screen.
+            mov [gs:si],al                  ; save the pixel into the pixel buffer.
+            add di,1
+            add si,1
+            sub ch,1
+            jnz .row
+        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        sub cl,1
+        jnz .column
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws an image that represents the mouse cursor's background over the mouse cursor, thereby erasing the
+;;; cursor from the screen while minimizing the screen area that is redrawn.
+;;;
+;;; EXPECTS:
+;;;     - gs to point to the pixel buffer's segment.
+;;;	- es to point to the video buffer's segment.
+;;; DESTROYS:
+;;;     - al, ecx, di, si
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Redraw_Mouse_Cursor_Background:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; map the mouse's x,y position into an offset in the video memory buffer.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ecx,[prev_mouse_pos_xy]
+    call ECX_To_VGA_Mem_Offset
+    add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
+    mov si,cursor_background                ; the background pixel buffer.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; redraw the cursor. note that we omit to check for access outside the boundaries of the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov cl,CURSOR_H
+    .column:
+        mov ch,CURSOR_W
+        .row:
+            mov al,[gs:si]                  ; load a pixel from the buffer.
+            mov [es:di],al                  ; save the pixel into the video buffer.
+            add di,1
+            add si,1
+            sub ch,1
+            jnz .row
+        add di,(SCREEN_W - CURSOR_W)        ; move to the next scanline.
+        sub cl,1
+        jnz .column
+
     ret

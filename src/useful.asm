@@ -97,22 +97,17 @@ XY_To_VGA_Mem_Offset:
 	ret
 
 ECX_To_VGA_Mem_Offset:
-    push ax
-    push bx
-
     ; convert the y coordinate into a row index on the screen.
     mov ax,cx										; y coordinate.
     mov bx,140h										; width of the screen in vga mode 13h.
     mul bx
 
     ; add the x coordinate to the row index.
-    ror ecx,10h										; move the high bits (x coordinate) in ecx to cx.
+    ror ecx,16										; move the high bits (x coordinate) in ecx to cx.
     mov bx,cx
     add ax,bx										; ax now contains a byte offset to the location on screen (video memory) where the mouse cursor should be drawn.
     mov di,ax
 
-    pop ax
-    pop bx
     ror ecx,10h										; restore the y coordinate to cx.
 
     ret

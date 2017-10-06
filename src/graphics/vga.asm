@@ -63,8 +63,16 @@ Set_Palette_13H:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Reset_Screen_Buffer_13H:
+    mov di,vga_buffer
     mov eax,0                           ; color to clear with.
     mov cx,3e80h                        ; how many bytes to clear (320*200 = 64000/4 = 16000).
+    rep stosd                           ; clear the screen in four-byte steps.
+
+    ret
+Reset_Screen_Buffer_13H_Partially:
+    mov di,vga_buffer                   ; location to start clearing from.
+    mov eax,0                           ; color to clear with.
+    mov cx,(SCREEN_W * 8/4)                        ; how many bytes to clear.
     rep stosd                           ; clear the screen in four-byte steps.
 
     ret

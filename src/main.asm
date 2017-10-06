@@ -17,6 +17,8 @@ TIMER_TICKS_PER_SEC = 200                   ; how many times per second the time
 FONT_HEIGHT         = 6                     ; how many px tall the font is.
 PALA_W              = 16                    ; dimensions of a pala texture.
 PALA_H              = 16
+CURSOR_W            = 10                    ; dimensions of the mouse cursor.
+CURSOR_H            = 13
 
 format MZ
 
@@ -116,12 +118,14 @@ call Set_Palette_13H
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Set_Timer_Interrupt_Handler
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; fill the video buffer with the ui's controls.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; clear the screen and fill the video buffer with the ui's controls.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+call Reset_Screen_Buffer_13H
 call Draw_Color_Selector
 call Draw_Palat_Selector
 call Draw_Pala_Editor
+call Save_Mouse_Cursor_Background           ; prevent a black box in the upper left corner of the screen on startup.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; loop until the user presses the right mouse button.
@@ -130,12 +134,13 @@ call Draw_Pala_Editor
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; clear the screen.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,vga_buffer
-    call Reset_Screen_Buffer_13H
+    ;mov di,vga_buffer
+    ;call Reset_Screen_Buffer_13H
+    call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
 
-    call Draw_Color_Selector
-    call Draw_Palat_Selector
-    call Draw_Pala_Editor
+    ;call Draw_Color_Selector
+    ;call Draw_Palat_Selector
+    ;call Draw_Pala_Editor
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
@@ -146,6 +151,8 @@ call Draw_Pala_Editor
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; get mouse position and button status. will place mouse x position in cx, and y position in dx. bx will hold mouse button status.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ecx,[mouse_pos_xy]
+    mov [prev_mouse_pos_xy],ecx             ; save the mouse's location from last frame.
     mov ax,3
     int 33h
     shr cx,1                                ; divide x coordinate by 2.
@@ -159,7 +166,7 @@ call Draw_Pala_Editor
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov ax,word [mouse_pos_xy]              ; get the mouse's y coordinate.
     cmp ax,0
-    jnz .skip_fps_display                   ; if the mouse isn't at the upper border, don't print out the fps display.
+    ;jnz .skip_fps_display                   ; if the mouse isn't at the upper border, don't print out the fps display.
     movzx bx,[frame_time]
     mov cl,'g'
     mov di,308
@@ -168,8 +175,22 @@ call Draw_Pala_Editor
     .skip_fps_display:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; print out the mouse's current coordinates.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bx,word [mouse_pos_xy]
+    mov cl,'g'
+    mov di,(SCREEN_W * 195) + 70
+    call Draw_Unsigned_Integer_Long
+    mov bx,word [mouse_pos_xy+2]
+    mov cl,'g'
+    mov di,(SCREEN_W * 195) + 50
+    call Draw_Unsigned_Integer_Long
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
+    call Save_Mouse_Cursor_Background       ; save the cursor's background this frame, so we can use to it erase the cursor next frame.
     mov ecx,[mouse_pos_xy]
     call ECX_To_VGA_Mem_Offset              ; map the mouse's x,y position into an offset in the video memory buffer (di).
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
@@ -204,10 +225,13 @@ segment @BASE_DATA
     project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project, i.e. the name on its files, etc.
 
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
-    mouse_pos_xy dd 0                       ; the x and y coordinates of the mouse cursor.
+
+    mouse_pos_xy dd 0                       ; the x,y coordinates of the mouse cursor.
+    prev_mouse_pos_xy dd 0                  ; the mouse's x,y coordinates in the previous frame.
     mouse_buttons dw 0                      ; mouse button status.
 
     ; editing.
+    magnification db 3                      ; by how much the current pala should be magnified (1 = 4x, 2 = 8x, 3 = 12x).
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
     pen_color db 4                          ; which palette index the pen is painting with.
 
@@ -222,7 +246,7 @@ segment @BASE_DATA
                           db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
     project_name_str db "c",0,0,0,0,0,0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
-    str_unsaved_changes db "f*",0
+    str_unsaved_changes db "f*",0           ; a little indicator shown next to the project name when there are unsaved changes.
 
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
 
@@ -244,4 +268,6 @@ segment @BUFFER_1
 
 segment @BUFFER_2
     pala_data rb PALA_BUFFER_SIZE           ; the texture pixel data loaded from the palat file is stored here.
+
+    cursor_background rb (CURSOR_W * CURSOR_H) ; used to store the background of the mouse cursor, so we can erase the cursor without redrawing the whole screen.
 

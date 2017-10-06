@@ -1,5 +1,5 @@
 ; The mouse cursor's graphic.
-gfx_mouse_cursor    db 10, 13
+gfx_mouse_cursor    db CURSOR_W, CURSOR_H
                     db 101, 101, 0, 0, 0, 0, 0, 0, 0, 0
                     db 101, 97, 101, 0, 0, 0, 0, 0, 0, 0
                     db 101, 98, 97, 101, 0, 0, 0, 0, 0, 0
