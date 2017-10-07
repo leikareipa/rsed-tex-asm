@@ -36,7 +36,7 @@ Enable_Mouse:
 ;;;     (- unknown)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Translate_Mouse_Pos_To_Edit_Segment:
-    mov ebx,[mouse_pos_xy]                  ; ax = mouse x, upper 16 bits = mouse y coordinate.
+    mov ebx,dword [mouse_pos_xy]                  ; get the mouse cursor position. ax = mouse x, eax upper 16 bits = mouse y coordinate.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; make the mouse position relative to the 0,0 corner of the edit segment, and make sure that
@@ -49,29 +49,31 @@ Translate_Mouse_Pos_To_Edit_Segment:
     js .not_in_segment                      ; jump if below 0.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; translate.
+    ; translate the mouse cursor to a pala pixel index (i.e. to a 16x16 grid).
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov cl,[magnification]
     mov ax,bx
     div cl
-    movzx bx,al
+    cmp al,PALA_W
+    jge .not_in_segment                     ; if the index is >= 16, we know we're outside the pala.
+    mov dl,al                               ; set translated mouse x.
     rol ebx,16
     mov ax,bx
     div cl
-    movzx bx,al
+    cmp al,PALA_H
+    jge .not_in_segment                     ; if the index is >= 16, we know we're outside the pala.
+    mov dh,al                               ; set translated mouse y.
 
-    rol ebx,16
-    mov [mouse_pos_edit_xy],ebx
+    mov [mouse_pos_edit_xy],dx
+    mov [mouse_inside_edit],1
 
     jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; if the cursor isn't inside the edit segment, set the 16th bit in eax to 1 to signal this.
+    ; if the cursor isn't inside the edit segment, set the 16th bit in eax to 0 to signal this.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .not_in_segment:
-    ;mov eax,[mouse_pos_edit_xy]
-    ;or eax,10000000000000000000000000000000b
-    ;mov [mouse_pos_edit_xy],eax
+    mov [mouse_inside_edit],0
 
     .exit:
     ret

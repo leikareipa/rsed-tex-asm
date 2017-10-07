@@ -151,15 +151,15 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; get mouse position and button status. will place mouse x position in cx, and y position in dx. bx will hold mouse button status.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ecx,[mouse_pos_xy]
-    mov [prev_mouse_pos_xy],ecx             ; save the mouse's location from last frame.
+    mov ecx,dword [mouse_pos_xy]
+    mov dword [prev_mouse_pos_xy],ecx             ; save the mouse's location from last frame.
     mov ax,3
     int 33h
     shr cx,1                                ; divide x coordinate by 2.
     rol ecx,10h                             ; move x coordinate into high bits of ecx.
     mov cx,dx                               ; put y coordinate into low bits of ecx.
-    mov [mouse_pos_xy],ecx                  ; save the mouse position for later use.
-    mov [mouse_buttons],bx                  ; save mouse buttons' status for later use.
+    mov dword [mouse_pos_xy],ecx                  ; save the mouse position for later use.
+    mov word [mouse_buttons],bx                  ; save mouse buttons' status for later use.
 
     call Translate_Mouse_Pos_To_Edit_Segment
 
@@ -179,21 +179,25 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print out the mouse's current coordinates.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov bx,word [mouse_pos_edit_xy]
+    cmp [mouse_inside_edit],1
+    jne .skip_mouse_display
+    mov dx,[mouse_pos_edit_xy]
+    movzx bx,dl
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 70
     call Draw_Unsigned_Integer_Long
-    mov bx,word [mouse_pos_edit_xy+2]
+    movzx bx,dh
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 50
     call Draw_Unsigned_Integer_Long
+    .skip_mouse_display:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
     call Save_Mouse_Cursor_Background       ; save the cursor's background this frame, so we can use to it erase the cursor next frame.
-    mov ecx,[mouse_pos_xy]
+    mov ecx,dword [mouse_pos_xy]
     call ECX_To_VGA_Mem_Offset              ; map the mouse's x,y position into an offset in the video memory buffer (di).
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
     mov si,gfx_mouse_cursor
@@ -232,7 +236,9 @@ segment @BASE_DATA
     mouse_pos_xy dd 0                       ; the x,y coordinates of the mouse cursor.
     prev_mouse_pos_xy dd 0                  ; the mouse's x,y coordinates in the previous frame.
     mouse_buttons dw 0                      ; mouse button status.
-    mouse_pos_edit_xy dd 0                  ; the position of the mouse cursor relatiev to the edit segment.
+
+    mouse_inside_edit db 0                  ; set to 1 if the mouse is within the pala texture in the edit field.
+    mouse_pos_edit_xy dw 0                  ; the position of the mouse cursor relative to the edit segment.
 
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.

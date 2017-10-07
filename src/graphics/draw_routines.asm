@@ -439,7 +439,7 @@ Draw_Mouse_Cursor:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; get the mouse cursor's x,y coordinates. x will be placed in edx, y in ecx.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ecx,[mouse_pos_xy]
+    mov ecx,dword [mouse_pos_xy]
     mov edx,ecx
     shr edx,16
 
@@ -459,7 +459,6 @@ Draw_Mouse_Cursor:
 
     .check_y:
     cmp cx,(SCREEN_H - CURSOR_H)
-    int 3
     jl .keep_y                              ; if mouse_y < (screen_h - cursor_h).
     mov ax,SCREEN_H                         ; otherwise, set the cursor image's height to be the remainder.
     sub ax,cx
@@ -524,7 +523,7 @@ Save_Mouse_Cursor_Background:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; map the mouse's x,y position into an offset in the video memory buffer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ecx,[mouse_pos_xy]
+    mov ecx,dword [mouse_pos_xy]
     call ECX_To_VGA_Mem_Offset
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
     mov si,cursor_background                ; we'll save the pixels into gs:si.
@@ -548,7 +547,6 @@ Save_Mouse_Cursor_Background:
 
     .check_y:
     cmp cx,(SCREEN_H - CURSOR_H)
-    int 3
     jl .keep_y                              ; if mouse_y < (screen_h - cursor_h).
     mov ax,SCREEN_H                         ; otherwise, set the cursor image's height to be the remainder.
     sub ax,cx
@@ -635,7 +633,7 @@ Redraw_Mouse_Cursor_Background:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; map the mouse's x,y position into an offset in the video memory buffer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ecx,[prev_mouse_pos_xy]
+    mov ecx,dword [prev_mouse_pos_xy]
     call ECX_To_VGA_Mem_Offset
     add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
     mov si,cursor_background                ; the background pixel buffer.
