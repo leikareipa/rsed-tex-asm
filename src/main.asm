@@ -45,9 +45,8 @@ start:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mov ax,@BASE_DATA
 mov gs,ax
-mov ah,62h
-int 21h                                     ; get the address of the psp.
-mov ax,[ds:2]
+mov bx,ds                                   ; get the address of the psp.
+mov ax,[ds:2]                               ; get from the psp the last paragraph allocated to the program.
 sub ax,bx
 shr ax,6                                    ; convert to kilobytes.
 mov [gs:free_conventional_memory],ax
@@ -174,6 +173,7 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov word [mouse_buttons],bx                  ; save mouse buttons' status for later use.
 
     call Translate_Mouse_Pos_To_Edit_Segment
+    call Translate_Mouse_Pos_To_Palette_Segment
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
@@ -203,7 +203,7 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov di,(SCREEN_W * 1) + 50
     call Draw_Unsigned_Integer_Long
     .skip_mouse_display:
-    mov bx,[free_conventional_memory]
+    movzx bx,byte [mouse_pos_palette_y]
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 20
     call Draw_Unsigned_Integer_Long
@@ -257,6 +257,9 @@ segment @BASE_DATA
 
     mouse_inside_edit db 0                  ; set to 1 if the mouse is within the pala texture in the edit field.
     mouse_pos_edit_xy dw 0                  ; the position of the mouse cursor relative to the edit segment.
+
+    mouse_inside_palette db 0               ; set to 1 if the mouse is within the color swatches in the color selector.
+    mouse_pos_palette_y db 0                ; the position of the mouse cursor relative to the palette segment.
 
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.
