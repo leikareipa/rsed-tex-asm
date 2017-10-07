@@ -145,10 +145,8 @@ Draw_Unsigned_Integer:
     ret
 
 Draw_Unsigned_Integer_Long:
-    push bx
-
     mov byte [tmp_int_str],cl               ; save the color code at the beginning of the string.
-    mov eax,0a0064h                         ; low 16 bits = 100, high 16 bits = 10.
+    mov eax,0a0064h                         ; low 16 bits = 100d, high 16 bits = 10d.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; extract the most significant digit from the value. that is, keep subtracting 100 from the value
@@ -162,7 +160,7 @@ Draw_Unsigned_Integer_Long:
         inc cl
         jmp .100
     .100_done:
-    mov byte [tmp_int_str+1],cl
+    ;mov byte [tmp_int_str+1],cl
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; extract the second-most significant digit from the value.
@@ -190,7 +188,5 @@ Draw_Unsigned_Integer_Long:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov si,tmp_int_str
     call Draw_String
-
-    pop bx
 
     ret

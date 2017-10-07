@@ -19,6 +19,8 @@ PALA_W              = 16                    ; dimensions of a pala texture.
 PALA_H              = 16
 CURSOR_W            = 10                    ; dimensions of the mouse cursor. NOTE: neither the width nor height should be more than 16 px.
 CURSOR_H            = 13                    ; NOTE: if you change the cursor width, you need to change the cursor drawing routines as well.
+NUM_PALA_THUMB_X    = 11                    ; the number of pala thumbnails horizontally in the palat selector.
+NUM_PALA_THUMB_Y    = 23                    ; the number of pala thumbnails vertically in the palat selector.
 
 format MZ
 
@@ -67,7 +69,7 @@ int 21h
 mov dx,cmd_argument_info_str
 mov ah,9h
 int 21h
-jmp .exit
+jmp .exit                                   ; this needs to be commented out if using the dosbox debugger.
 
 .cmd_line_parse_success:
 
@@ -179,8 +181,9 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov dword [mouse_pos_xy],ecx                  ; save the mouse position for later use.
     mov word [mouse_buttons],bx                  ; save mouse buttons' status for later use.
 
-    call Translate_Mouse_Pos_To_Edit_Segment
-    call Translate_Mouse_Pos_To_Palette_Segment
+    ;call Translate_Mouse_Pos_To_Edit_Segment
+    ;call Translate_Mouse_Pos_To_Palette_Segment
+    call Translate_Mouse_Pos_To_Palat_Segment
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
@@ -198,9 +201,9 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print out the mouse's current coordinates.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    cmp [mouse_inside_edit],1
+    cmp [mouse_inside_palat],1
     jne .skip_mouse_display
-    mov dx,[mouse_pos_edit_xy]
+    mov dx,[mouse_pos_palat_xy]
     movzx bx,dl
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 70
@@ -266,9 +269,13 @@ segment @BASE_DATA
     mouse_inside_palette db 0               ; set to 1 if the mouse is within the color swatches in the color selector.
     mouse_pos_palette_y db 0                ; the position of the mouse cursor relative to the palette segment.
 
+    mouse_inside_palat db 0                 ; set to 1 if the mouse is within the palat selector.
+    mouse_pos_palat_xy dw 0                 ; the position of the mouse cursor relative to the palat segment.
+
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
+    hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
     pen_color db 4                          ; which palette index the pen is painting with.
 
     ; STRINGS

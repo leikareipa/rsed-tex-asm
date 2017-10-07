@@ -31,9 +31,9 @@ Enable_Mouse:
 ;;; EXPECTS:
 ;;;     - ds to point to the general data segment.
 ;;; DESTROYS:
-;;;     (- unknown)
+;;;     - eax, cl
 ;;; RETURNS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Translate_Mouse_Pos_To_Palette_Segment:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,6 +76,64 @@ Translate_Mouse_Pos_To_Palette_Segment:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Translates the mouse's current coordinates to the palat segment.
+;;;
+;;; Note that this function should be called AFTER you've obtained the mouse cursor's current x,y coordinates
+;;; and stored them in mouse_pos_xy.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Translate_Mouse_Pos_To_Palat_Segment:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; get the mouse cursor position. ax = mouse x, eax upper 16 bits = mouse y coordinate.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ebx,[mouse_pos_xy]
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; make the mouse position relative to the 0,0 corner of the edit segment, and make sure that
+    ; position is inside the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    sub bx,7                                ; y.
+    js .not_in_segment                      ; jump if below 0.
+    rol ebx,16                              ; move x coordinate into ax.
+    sub bx,3                                ; x
+    js .not_in_segment                      ; jump if below 0.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; translate the mouse cursor to a pala thumbnail index.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    shr bx,3                                ; bx /= 8, which assumes that each pala thumbnail is 8x8.
+    cmp bl,NUM_PALA_THUMB_X                 ; test x.
+    jge .not_in_segment                     ; if the index is >= 16, we know we're outside the pala.
+    mov dl,bl                               ; set translated mouse x.
+    rol ebx,16
+    shr bx,3                                ; bx /= 8, which assumes that each pala thumbnail is 8x8.
+    cmp bl,NUM_PALA_THUMB_Y                 ; test y.
+    jge .not_in_segment                     ; if the index is >= 16, we know we're outside the pala.
+    mov dh,bl                               ; set translated mouse y.
+
+    mov [mouse_pos_palat_xy],dx
+    mov [mouse_inside_palat],1
+
+    jmp .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; if the cursor isn't inside the edit segment, set the 16th bit in eax to 0 to signal this.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .not_in_segment:
+    mov [mouse_inside_palat],0
+
+    .exit:
+    ret
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Translates the mouse's current coordinates to the edit segment.
 ;;;
 ;;; Note that this function should be called AFTER you've obtained the mouse cursor's current x,y coordinates
@@ -86,7 +144,7 @@ Translate_Mouse_Pos_To_Palette_Segment:
 ;;; DESTROYS:
 ;;;     - ax, ebx, cx, dx
 ;;; RETURNS:
-;;;     (- unknown)
+;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Translate_Mouse_Pos_To_Edit_Segment:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
