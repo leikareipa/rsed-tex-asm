@@ -22,12 +22,12 @@ Draw_Pala_Editor:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     movzx ax,[selected_pala]
     .12x:
-    cmp [magnification],3
+    cmp [magnification],12
     jne .8x
     call Draw_Pala_Enlarged_12X
     jmp .exit
     .8x:
-    cmp [magnification],2
+    cmp [magnification],8
     jne .4x
     call Draw_Pala_Enlarged_8X
     jmp .exit

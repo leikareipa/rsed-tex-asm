@@ -161,6 +161,8 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov [mouse_pos_xy],ecx                  ; save the mouse position for later use.
     mov [mouse_buttons],bx                  ; save mouse buttons' status for later use.
 
+    call Translate_Mouse_Pos_To_Edit_Segment
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,11 +179,11 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print out the mouse's current coordinates.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov bx,word [mouse_pos_xy]
+    mov bx,word [mouse_pos_edit_xy]
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 70
     call Draw_Unsigned_Integer_Long
-    mov bx,word [mouse_pos_xy+2]
+    mov bx,word [mouse_pos_edit_xy+2]
     mov cl,'g'
     mov di,(SCREEN_W * 1) + 50
     call Draw_Unsigned_Integer_Long
@@ -226,12 +228,14 @@ segment @BASE_DATA
 
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
 
+    ; mouse.
     mouse_pos_xy dd 0                       ; the x,y coordinates of the mouse cursor.
     prev_mouse_pos_xy dd 0                  ; the mouse's x,y coordinates in the previous frame.
     mouse_buttons dw 0                      ; mouse button status.
+    mouse_pos_edit_xy dd 0                  ; the position of the mouse cursor relatiev to the edit segment.
 
     ; editing.
-    magnification db 3                      ; by how much the current pala should be magnified (1 = 4x, 2 = 8x, 3 = 12x).
+    magnification db 12                     ; by how much the current pala should be magnified.
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
     pen_color db 4                          ; which palette index the pen is painting with.
 

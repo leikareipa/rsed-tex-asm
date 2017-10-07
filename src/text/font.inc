@@ -8,11 +8,11 @@
 ; Note also that no character in the set should have all of its pixels filled. That would result in an infinite loop in rendering.
 ;
 font	dw 0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [ ].
-        dw 00141h,00140h,00140h,00281h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [!].
+        dw 00001h,00140h,00140h,00280h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [!].
         dw 00000h,00002h,0013eh,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; ["].
         dw 00001h,00001h,00140h,0013fh,00280h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [#].
         dw 00001h,00001h,00140h,0013fh,00280h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [$].
-        dw 00000h,00142h,0013fh,0013fh,00142h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [%].
+        dw 00000h,00002h,00140h,0013fh,0013fh,00140h,00002h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [%].
         dw 00001h,00001h,00140h,0013fh,00280h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [&].
         dw 00001h,00140h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; ['].
         dw 00002h,0013fh,00140h,00140h,00141h,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh,0ffffh ; [(].
