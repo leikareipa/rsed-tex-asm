@@ -41,6 +41,18 @@ include "cmd_line/cmd_line.asm"
 
 start:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; get the amount of free conventional memory, by looking at the dos psp (program segment prefix).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov ax,@BASE_DATA
+mov gs,ax
+mov ah,62h
+int 21h                                     ; get the address of the psp.
+mov ax,[ds:2]
+sub ax,bx
+shr ax,6                                    ; convert to kilobytes.
+mov [gs:free_conventional_memory],ax
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; parse the command line.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Parse_Command_Line
@@ -191,6 +203,10 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov di,(SCREEN_W * 1) + 50
     call Draw_Unsigned_Integer_Long
     .skip_mouse_display:
+    mov bx,[free_conventional_memory]
+    mov cl,'g'
+    mov di,(SCREEN_W * 1) + 20
+    call Draw_Unsigned_Integer_Long
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor.
@@ -228,6 +244,8 @@ int 21h
 
 
 segment @BASE_DATA
+    free_conventional_memory dw 0           ; the amount of free conventional memory (in kb) at program startup.
+
     project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project, i.e. the name on its files, etc.
 
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
