@@ -67,13 +67,9 @@ int 21h
 mov dx,cmd_argument_info_str
 mov ah,9h
 int 21h
-;jmp .exit
+jmp .exit
 
 .cmd_line_parse_success:
-;mov dx,project_name_str
-;mov ah,9h
-;int 21h
-;jmp .exit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; assign segments.
@@ -86,6 +82,17 @@ mov ax,@BUFFER_1
 mov es,ax
 mov ax,@BUFFER_2
 mov gs,ax
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; exit if we don't have enough conventional memory.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+cmp [free_conventional_memory],200
+jge .got_memory
+mov dx,err_memory
+mov ah,9h
+int 21h
+jmp .exit
+.got_memory:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; load the palat file. also check to see if there was an error loading it, and if so, exit.
@@ -246,8 +253,6 @@ int 21h
 segment @BASE_DATA
     free_conventional_memory dw 0           ; the amount of free conventional memory (in kb) at program startup.
 
-    project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project, i.e. the name on its files, etc.
-
     tmp_int_str db "m999",0                 ; a temporary buffer used when printing integers to the screen.
 
     ; mouse.
@@ -271,6 +276,8 @@ segment @BASE_DATA
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
     err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
     err_commd_line_malformed db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
+    err_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
+               db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
 
     ; ui messages.
     cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh
@@ -279,7 +286,12 @@ segment @BASE_DATA
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
     str_unsaved_changes db "f*",0           ; a little indicator shown next to the project name when there are unsaved changes.
 
+    ; file info.
+    project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project we're loading data from.
+    project_name_len db 0                   ; the number of characters in the project name, excluding the null terminator.
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
+    project_file_name rb 22                 ; the name and path to the project file, which is 'proj_name\proj_name.xxx'.
+    project_file_ext_offset dw 0            ; the offset in project_file_name where the file's 3-character extension begins.
 
     ; timer-related.
     int_8h_handler dd 10203040h             ; address of dos's interrupt handler. first word is the segment, second word is the address.

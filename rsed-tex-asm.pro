@@ -17,5 +17,6 @@ DISTFILES += \
     src/graphics/vga.asm \
     src/graphics/draw_routines.asm \
     src/file/file.asm \
-    src/cmd_line/cmd_line.asm
+    src/cmd_line/cmd_line.asm \
+    src/file/manif_parser.asm
 

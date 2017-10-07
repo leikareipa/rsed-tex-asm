@@ -4,7 +4,7 @@
 ;;; EXPECTS:
 ;;;     - ds to be the data segment in which the PSP and command line are stored.
 ;;; DESTROYS:
-;;;     - ax, bx, cx, si, gs, ds
+;;;     - ax, bx, cx, si, di, gs, ds
 ;;; RETURNS:
 ;;;     - al is set to 1 if the parsing succeeded, otherwise set to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,6 +28,9 @@ Parse_Command_Line:
     cmp ax,1
     jl .cmd_line_parse_fail
 
+    mov di,ax
+    add di,1                                    ; we use di to index into the project file path string, and the extra 1 accounts for the folder separator.
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; test the command line's formatting to make sure it's valid.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,8 +38,10 @@ Parse_Command_Line:
     mov bx,82h                                  ; start of the command line string.
     .cmd_space:
         mov al,[gs:bx]                          ; get the next character from the command line for testing and converting.
+
         cmp al,byte ' '
         je .cmd_line_parse_fail                 ; if we find any spaces, bail out.
+
         and al,11011111b                        ; convert the character to uppercase if it wasn't already.
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,11 +54,39 @@ Parse_Command_Line:
 
         mov [project_name+si],al                ; save the converted character in the project name string.
         mov [project_name_str+si+1],al          ; save the converted character in the printable project name string.
-        inc si
-        inc bx
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ; construct the project file's path at the same time.
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        mov [project_file_name+si],al
+        mov [project_file_name+di],al
+
+        add [project_name_len],1
+        add si,1
+        add di,1
+        add bx,1
+
         loop .cmd_space
 
-    mov al,1
+    mov al,1                                    ; signal that we loaded the file successfully.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; finalize the project file path string.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov [project_file_name+si],'\'
+    mov [project_file_name+di],'.'
+    add di,1
+    mov [project_file_name+di],'x'
+    mov [project_file_ext_offset],di
+    add di,1
+    mov [project_file_name+di],'x'
+    add di,1
+    mov [project_file_name+di],'x'
+    add di,1
+    mov [project_file_name+di],0
+    add di,1
+    mov [project_file_name+di],'$'
+
     jmp .cmd_line_parse_success
 
     .cmd_line_parse_fail:
