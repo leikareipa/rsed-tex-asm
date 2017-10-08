@@ -333,7 +333,7 @@ Draw_Pala_Thumbnail:
 ;;; RETURNS:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Draw_Color_Selector:
+Draw_Palette_Selector:
     .SIDE_OFFSET    = 13
     .SWATCH_WIDTH   = 8
     .SWATCH_HEIGHT  = 6
@@ -569,7 +569,7 @@ Save_Mouse_Cursor_Background:
     jmp .reckless
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; save the background. note that we omit to check for access outside the boundaries of the screen.
+    ; save the background, either carefully or recklessly.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .careful:
     mov cl,bh
@@ -582,8 +582,8 @@ Save_Mouse_Cursor_Background:
             add si,1
             sub ch,1
             jnz .row
-        add di,(SCREEN_W)        ; move to the next scanline.
-        sub di,dx                ; move to the start of the cursor's image position on that scanline.
+        add di,(SCREEN_W)                   ; move to the next scanline.
+        sub di,dx                           ; move to the start of the cursor's image position on that scanline.
         sub cl,1
         jnz .column
     jmp .exit

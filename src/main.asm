@@ -40,6 +40,7 @@ include "timer/timer.asm"
 include "input/mouse/mouse.asm"
 include "file/file.asm"
 include "cmd_line/cmd_line.asm"
+include "editor/editor.asm"
 
 start:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +143,7 @@ call Set_Timer_Interrupt_Handler
 ; clear the screen and fill the video buffer with the ui's controls.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Reset_Screen_Buffer_13H
-call Draw_Color_Selector
+call Draw_Palette_Selector
 call Draw_Palat_Selector
 call Draw_Pala_Editor
 call Save_Mouse_Cursor_Background           ; prevent a black box in the upper left corner of the screen on startup.
@@ -158,10 +159,6 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;call Reset_Screen_Buffer_13H
     call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
 
-    ;call Draw_Color_Selector
-    ;call Draw_Palat_Selector
-    ;call Draw_Pala_Editor
-
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,25 +169,25 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ; get mouse position and button status. will place mouse x position in cx, and y position in dx. bx will hold mouse button status.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov ecx,dword [mouse_pos_xy]
-    mov dword [prev_mouse_pos_xy],ecx             ; save the mouse's location from last frame.
+    mov dword [prev_mouse_pos_xy],ecx       ; save the mouse's location from last frame.
     mov ax,3
     int 33h
     shr cx,1                                ; divide x coordinate by 2.
     rol ecx,10h                             ; move x coordinate into high bits of ecx.
     mov cx,dx                               ; put y coordinate into low bits of ecx.
-    mov dword [mouse_pos_xy],ecx                  ; save the mouse position for later use.
-    mov word [mouse_buttons],bx                  ; save mouse buttons' status for later use.
+    mov dword [mouse_pos_xy],ecx            ; save the mouse position for later use.
+    mov word [mouse_buttons],bx             ; save mouse buttons' status for later use.
 
-    ;call Translate_Mouse_Pos_To_Edit_Segment
-    ;call Translate_Mouse_Pos_To_Palette_Segment
-    call Translate_Mouse_Pos_To_Palat_Segment
+    call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
+
+    call Handle_Editor_Mouse_Click          ; process the mouse click in some way.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov ax,word [mouse_pos_xy]              ; get the mouse's y coordinate.
     cmp ax,0
-    ;jnz .skip_fps_display                   ; if the mouse isn't at the upper border, don't print out the fps display.
+    ;jnz .skip_fps_display                  ; if the mouse isn't at the upper border, don't print out the fps display.
     movzx bx,[frame_time]
     mov cl,'g'
     mov di,628
@@ -221,7 +218,6 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
     call Save_Mouse_Cursor_Background       ; save the cursor's background this frame, so we can use to it erase the cursor next frame.
     mov ecx,dword [mouse_pos_xy]
     call ECX_To_VGA_Mem_Offset              ; map the mouse's x,y position into an offset in the video memory buffer (di).
