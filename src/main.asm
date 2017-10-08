@@ -70,7 +70,7 @@ int 21h
 mov dx,cmd_argument_info_str
 mov ah,9h
 int 21h
-jmp .exit                                   ; this needs to be commented out if using the dosbox debugger.
+;jmp .exit                                   ; this needs to be commented out if using the dosbox debugger.
 
 .cmd_line_parse_success:
 
@@ -271,6 +271,7 @@ segment @BASE_DATA
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
+    selected_pala_offset db 0               ; pre-computed offset from the start of the PALA file data for the currently selected pala.
     hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
     pen_color db 4                          ; which palette index the pen is painting with.
 

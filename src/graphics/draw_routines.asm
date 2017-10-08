@@ -102,14 +102,14 @@ Draw_Pala_Enlarged_8X:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov si,(PALA_W * PALA_H)
     mul si
-    mov si,ax                                       ; si stores the offset.
+    mov si,ax                               ; si stores the offset.
 
     mov cx,PALA_H
     .column:
         push cx
         mov cx,PALA_W
         .row:
-            mov ebx,dword [gs:pala_data+si]         ; get the next pixel from the pala.
+            mov ebx,dword [gs:pala_data+si] ; get the next pixel from the pala.
             add si,1
 
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -165,56 +165,68 @@ Draw_Pala_Enlarged_12X:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov si,(PALA_W * PALA_H)
     mul si
-    mov si,ax                                       ; si stores the offset.
+    mov si,ax                               ; si stores the offset.
 
     mov cx,PALA_H
     .column:
         push cx
         mov cx,PALA_W
         .row:
-            mov ebx,dword [gs:pala_data+si]         ; get the next pixel from the pala.
+            mov bl,[gs:pala_data+si] ; get the next pixel from the pala.
+            call Draw_Edit_Pixel_12X        ; paint the current pixel.
+
             add si,1
-
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ; duplicate the pixel 4x into eax.
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            mov bh,bl
-            mov ax,bx
-            rol eax,16
-            mov ax,bx
-
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ; draw an enlarged pixel.
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            push di
-            mov dx,3
-            .do:
-                stosd
-                stosd
-                stosd
-                add di,(SCREEN_W - .MAGNIF)
-                stosd
-                stosd
-                stosd
-                add di,(SCREEN_W - .MAGNIF)
-                stosd
-                stosd
-                stosd
-                add di,(SCREEN_W - .MAGNIF)
-                stosd
-                stosd
-                stosd
-                add di,(SCREEN_W - .MAGNIF)
-                sub dx,1
-                cmp dx,0
-                jne .do
-            pop di
-
             add di,.MAGNIF
+
             loop .row
         add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF)) ; move down to the next scanline.
         pop cx
         loop .column
+
+    ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; a helper function for Draw_Pala_Enlarged_12X.
+; expects:
+;   - bl to contain the palette index of the pixel's color.
+;   - di to point to the top left corner in the video buffer to draw the pixel to.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Edit_Pixel_12X:                        ; this is a helper function for Draw_Pala_Enlarged_12X
+    .MAGNIF = 12
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; duplicate the pixel 4x into eax.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bh,bl
+    mov ax,bx
+    rol eax,16
+    mov ax,bx
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw an enlarged pixel.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push di
+    mov dx,3                                ; the number of times we loop.
+    .do:
+        stosd
+        stosd
+        stosd
+        add di,(SCREEN_W - .MAGNIF)
+        stosd
+        stosd
+        stosd
+        add di,(SCREEN_W - .MAGNIF)
+        stosd
+        stosd
+        stosd
+        add di,(SCREEN_W - .MAGNIF)
+        stosd
+        stosd
+        stosd
+        add di,(SCREEN_W - .MAGNIF)
+        sub dx,1
+        cmp dx,0
+        jne .do
+    pop di
 
     ret
 

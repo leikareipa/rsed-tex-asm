@@ -25,39 +25,58 @@ Handle_Editor_Mouse_Click:
     ; find out which editor segment the mouse is in.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov eax,[mouse_pos_xy]
-    rol eax,16                              ; move mouse x into ax.
+    rol eax,16                                  ; move mouse x into ax.
     cmp ax,90
     jl .in_palat
     cmp ax,290
     jl .in_edit
     jmp .in_palette
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the palat segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palat:
     call Translate_Mouse_Pos_To_Palat_Segment
 
-    cmp [mouse_inside_palat],1              ; if the mouse cursor isn't inside the editor rectangle for this segment, we don't need to do anything.
+    cmp [mouse_inside_palat],1                  ; if the mouse cursor isn't inside the editor rectangle for this segment, we don't need to do anything.
     jne .exit
 
-    mov bx,1
-    mov cl,'g'
-    mov di,(SCREEN_W * 1) + 120
-    call Draw_Unsigned_Integer_Long
+    ; pre-calculate the pala offset in the PALA data.
 
     jmp .exit
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the edit segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_edit:
     call Translate_Mouse_Pos_To_Edit_Segment
 
     cmp [mouse_inside_edit],1
     jne .exit
 
-    mov bx,2
-    mov cl,'g'
-    mov di,(SCREEN_W * 1) + 120
-    call Draw_Unsigned_Integer_Long
+    ; set the pala pixel in the PALA dta array.
+    ;
+    mov cl,[magnification]
+    mov al,byte [mouse_pos_edit_xy+1]     ; y.
+    mul cl                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
+    add ax,4                                ; y offset on screen of the edit segment.
+    mov cx,SCREEN_W
+    mul cx
+    mov bx,ax
+    mov al,byte [mouse_pos_edit_xy]         ; x.
+    mov cl,[magnification]
+    mul cl                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
+    add bx,ax
+    add bx,99                               ; x offset on screen of the edit segment.
+    mov di,bx                               ; set the starting pixel in the video buffer for drawing the new edit pixel.
+    mov bl,[pen_color]
+    call Draw_Edit_Pixel_12X
 
     jmp .exit
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the palette segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palette:
     call Translate_Mouse_Pos_To_Palette_Segment
     cmp [mouse_inside_palette],1
