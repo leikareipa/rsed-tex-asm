@@ -7,6 +7,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; constants.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+BASE_MEM_REQUIRED   = 200                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
 PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
 TRANSPARENT_COLOR   = 0                     ; transparent color index.
@@ -89,9 +90,9 @@ mov gs,ax
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; exit if we don't have enough conventional memory.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-cmp [free_conventional_memory],200
+cmp [free_conventional_memory],BASE_MEM_REQUIRED
 jge .got_memory
-mov dx,err_memory
+mov dx,err_low_memory
 mov ah,9h
 int 21h
 jmp .exit
@@ -173,7 +174,7 @@ call Save_Mouse_Cursor_Background           ; prevent a black box in the upper l
     mov ax,3
     int 33h
     shr cx,1                                ; divide x coordinate by 2.
-    rol ecx,10h                             ; move x coordinate into high bits of ecx.
+    rol ecx,16                              ; move x coordinate into high bits of ecx.
     mov cx,dx                               ; put y coordinate into low bits of ecx.
     mov dword [mouse_pos_xy],ecx            ; save the mouse position for later use.
     mov word [mouse_buttons],bx             ; save mouse buttons' status for later use.
@@ -241,6 +242,7 @@ call Set_Video_Mode_To_Text                 ; exit out of VGA mode 13h.
 
 .exit:
 mov ah,4ch
+mov al,0
 int 21h
 
 ; end of program
@@ -271,7 +273,7 @@ segment @BASE_DATA
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
-    selected_pala_offset db 0               ; pre-computed offset from the start of the PALA file data for the currently selected pala.
+    selected_pala_offset dw 16*16*3         ; pre-computed offset from the start of the PALA file data for the currently selected pala.
     hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
     pen_color db 4                          ; which palette index the pen is painting with.
 
@@ -280,8 +282,8 @@ segment @BASE_DATA
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
     err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
     err_commd_line_malformed db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
-    err_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
-               db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
+    err_low_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
+                   db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
 
     ; ui messages.
     cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh

@@ -202,7 +202,7 @@ Draw_Edit_Pixel_12X:                        ; this is a helper function for Draw
     mov ax,bx
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; draw an enlarged pixel.
+    ; draw the enlarged pixel.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     push di
     mov dx,3                                ; the number of times we loop.
@@ -226,6 +226,87 @@ Draw_Edit_Pixel_12X:                        ; this is a helper function for Draw
         sub dx,1
         cmp dx,0
         jne .do
+    pop di
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; a helper function for Draw_Pala_Enlarged_8X.
+; expects:
+;   - bl to contain the palette index of the pixel's color.
+;   - di to point to the top left corner in the video buffer to draw the pixel to.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Edit_Pixel_8X:                        ; this is a helper function for Draw_Pala_Enlarged_12X
+    .MAGNIF = 8
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; duplicate the pixel 4x into eax.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bh,bl
+    mov ax,bx
+    rol eax,16
+    mov ax,bx
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the enlarged pixel.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push di
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    stosd
+    pop di
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; a helper function for Draw_Pala_Enlarged_4X.
+; expects:
+;   - bl to contain the palette index of the pixel's color.
+;   - di to point to the top left corner in the video buffer to draw the pixel to.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Edit_Pixel_4X:                        ; this is a helper function for Draw_Pala_Enlarged_12X
+    .MAGNIF = 4
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; duplicate the pixel 4x into eax.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bh,bl
+    mov ax,bx
+    rol eax,16
+    mov ax,bx
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw an enlarged pixel.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push di
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
+    add di,(SCREEN_W - .MAGNIF)
+    stosd
     pop di
 
     ret
