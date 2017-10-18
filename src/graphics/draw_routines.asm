@@ -312,6 +312,69 @@ Draw_Edit_Pixel_4X:                        ; this is a helper function for Draw_
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Prints the name of the project and palat file in the top right corner of the selector.
+;;;
+;;; EXPECTS:
+;;;     (- nothing)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Project_Title:
+    mov di,(SCREEN_W * 3) + 4
+    mov si,str_unsaved_changes
+    call Draw_String
+
+    mov di,(SCREEN_W * 2) + 9
+    mov si,project_name_str
+    call Draw_String
+
+    mov di,(SCREEN_W * 2) + 57
+    mov si,pala_file_str
+    call Draw_String
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the message that appears on the bottom left corner of the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+1
+    mov si,message_str
+    call Draw_String
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Prints the ID of the currently selected pala in the bottom left corner of the screen.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Current_Pala_ID:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; clear the pala id's background to black.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov eax,0
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+56
+    mov cx,FONT_HEIGHT
+    .clear:
+        mov [es:di],eax
+        mov [es:di+4],eax
+        mov [es:di+8],eax
+        add di,SCREEN_W
+        loop .clear
+
+    movzx bx,[selected_pala]                ; pala id.
+    mov cl,'b'                              ; text color.
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+56 ; text position.
+    call Draw_Unsigned_Integer_Long
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Draws all the editable pala textures.
 ;;;
 ;;; EXPECTS:
@@ -327,24 +390,9 @@ Draw_Palat_Selector:
     .THUMBNAIL_SIZE         = 8
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; print the name of the project and palat file in the top right corner of the selector.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,(SCREEN_W * 3) + 4
-    mov si,str_unsaved_changes
-    call Draw_String
-
-    mov di,(SCREEN_W * 2) + 9
-    mov si,project_name_str
-    call Draw_String
-
-    mov di,(SCREEN_W * 2) + 57
-    mov si,pala_file_str
-    call Draw_String
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the thumbnails.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov di,(SCREEN_W * (FONT_HEIGHT + 2)) + 3
+    mov di,(SCREEN_W * (FONT_HEIGHT + 3)) + 3
     xor ax,ax
     mov cx,.NUM_THUMBNAIL_ROWS
     .column:
@@ -358,10 +406,6 @@ Draw_Palat_Selector:
         pop cx
         add di,2560 - (.NUM_THUMBNAIL_COLUMNS * .THUMBNAIL_SIZE) ; move to the start of the next thumbnail row on the screen.
         loop .column
-
-    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+2
-    mov si,pala_file_str
-    call Draw_String
 
     ret
 

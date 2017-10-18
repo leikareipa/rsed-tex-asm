@@ -5,6 +5,48 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Deals with mouse movement.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Handle_Editor_Mouse_Move:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; find out which editor segment the mouse is in.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax,word[mouse_pos_xy+2]         ; ax = mouse y pos.
+    cmp ax,90
+    jl .in_palat
+    cmp ax,290
+    jl .in_edit
+    jmp .in_palette
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the palat segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .in_palat:
+    jmp .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the edit segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .in_edit:
+    jmp .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; deal with clicks to the palette segment.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .in_palette:
+    jmp .exit
+
+    .exit:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Deals with mouse clicks.
 ;;;
 ;;; EXPECTS:
@@ -24,8 +66,7 @@ Handle_Editor_Mouse_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; find out which editor segment the mouse is in.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov eax,[mouse_pos_xy]
-    rol eax,16                                  ; move mouse x into ax.
+    mov ax,word[mouse_pos_xy+2]         ; ax = mouse y pos.
     cmp ax,90
     jl .in_palat
     cmp ax,290
@@ -115,7 +156,7 @@ Handle_Pala_Click:
     add di,3                                ; offset horizontally to match the palat selector segment.
     movzx ax,byte[mouse_pos_palat_xy+1]     ; y.
     shl ax,3                                ; ax *= 8, the width of a pala thumbnail.
-    add ax,7                                ; offset vertically to match the palat selector segment.
+    add ax,8                                ; offset vertically to match the palat selector segment.
     mov cx,SCREEN_W
     mul cx                                  ; ax = absolute screen y coordinate.
     add di,ax
@@ -123,6 +164,11 @@ Handle_Pala_Click:
     ; then draw it.
     mov eax,05050505h                       ; the frame's color.
     call Draw_Pala_Thumb_Halo
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; update the ui text on which pala we've got selected.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Draw_Current_Pala_ID
 
     .exit:
     ret

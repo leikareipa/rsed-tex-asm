@@ -70,9 +70,36 @@ Reset_Screen_Buffer_13H:
 
     ret
 Reset_Screen_Buffer_13H_Partially:
-    mov di,vga_buffer                   ; location to start clearing from.
+    ;mov di,vga_buffer                   ; location to start clearing from.
     mov eax,0                           ; color to clear with.
-    mov cx,(SCREEN_W * 8/4)                        ; how many bytes to clear.
-    rep stosd                           ; clear the screen in four-byte steps.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; clear around the timer.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov cl,DEBUG_MODE
+    cmp cl,1
+    jne .clear_marker
+    .clear_timer:
+    mov di,vga_buffer
+    add di,SCREEN_W
+    mov cx,FONT_HEIGHT
+    .timer:
+        mov [es:di+308],eax
+        mov [es:di+308+4],eax
+        add di,SCREEN_W
+        loop .timer
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; clear around the save marker.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .clear_marker:
+    mov di,vga_buffer
+    add di,SCREEN_W
+    mov cx,FONT_HEIGHT
+    .marker:
+        mov [es:di+4],eax
+        add di,SCREEN_W
+        loop .marker
 
     ret

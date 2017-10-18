@@ -7,6 +7,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; constants.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+DEBUG_MODE          = 0                     ; set to 1 if the debug mode is enabled.
 BASE_MEM_REQUIRED   = 200                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
 PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
@@ -146,6 +147,8 @@ call Set_Timer_Interrupt_Handler
 call Reset_Screen_Buffer_13H
 call Draw_Palette_Selector
 call Draw_Palat_Selector
+call Draw_Project_Title
+call Draw_Current_Pala_ID
 call Draw_Pala_Editor
 call Save_Mouse_Cursor_Background       ; prevent a black box in the upper left corner of the screen on startup.
 
@@ -168,6 +171,8 @@ call Draw_Pala_Thumb_Halo
     ;call Reset_Screen_Buffer_13H
     call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
 
+    call Draw_Project_Title
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,40 +194,42 @@ call Draw_Pala_Thumb_Halo
 
     call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
 
+    call Handle_Editor_Mouse_Move           ; process mouse movement in some way.
     call Handle_Editor_Mouse_Click          ; process the mouse click in some way.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,word [mouse_pos_xy]              ; get the mouse's y coordinate.
-    cmp ax,0
-    ;jnz .skip_fps_display                  ; if the mouse isn't at the upper border, don't print out the fps display.
+    mov al,DEBUG_MODE
+    cmp al,1
+    jne .skip_fps_display
     movzx bx,[frame_time]
     mov cl,'g'
     mov di,628
     call Draw_Unsigned_Integer
     mov [frame_time],0
+
     .skip_fps_display:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; print out the mouse's current coordinates.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    cmp [mouse_inside_palat],1
-    jne .skip_mouse_display
-    mov dx,[mouse_pos_palat_xy]
-    movzx bx,dl
-    mov cl,'g'
-    mov di,(SCREEN_W * 1) + 70
-    call Draw_Unsigned_Integer_Long
-    movzx bx,dh
-    mov cl,'g'
-    mov di,(SCREEN_W * 1) + 50
-    call Draw_Unsigned_Integer_Long
-    .skip_mouse_display:
-    movzx bx,byte [mouse_pos_palette_y]
-    mov cl,'g'
-    mov di,(SCREEN_W * 1) + 20
-    call Draw_Unsigned_Integer_Long
+    ;cmp [mouse_inside_palat],1
+    ;jne .skip_mouse_display
+    ;mov dx,[mouse_pos_palat_xy]
+    ;movzx bx,dl
+    ;mov cl,'g'
+    ;mov di,(SCREEN_W * 1) + 70
+    ;call Draw_Unsigned_Integer_Long
+    ;movzx bx,dh
+    ;mov cl,'g'
+    ;mov di,(SCREEN_W * 1) + 50
+    ;call Draw_Unsigned_Integer_Long
+    ;.skip_mouse_display:
+    ;movzx bx,byte [mouse_pos_palette_y]
+    ;mov cl,'g'
+    ;mov di,(SCREEN_W * 1) + 20
+    ;call Draw_Unsigned_Integer_Long
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor.
@@ -277,7 +284,7 @@ segment @BASE_DATA
 
     mouse_inside_palat db 0                 ; set to 1 if the mouse is within the palat selector.
     mouse_pos_palat_xy dw 0                 ; the position of the mouse cursor relative to the palat segment.
-    prev_pala_thumb_offs dw 2267            ; the pixel offset on the screen of the top left corner of the thumbnail of the previously selected pala.
+    prev_pala_thumb_offs dw 2587            ; the pixel offset on the screen of the top left corner of the thumbnail of the previously selected pala.
                                             ; it's set by default to the 4th thumbnail.
 
     ; editing.
@@ -296,6 +303,7 @@ segment @BASE_DATA
                    db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
 
     ; ui messages.
+    message_str db "cCURRENT PALA:",0
     cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh
                           db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
     project_name_str db "c",0,0,0,0,0,0,0,0,0
