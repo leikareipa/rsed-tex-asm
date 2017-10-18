@@ -77,28 +77,52 @@ Handle_Editor_Mouse_Click:
 Handle_Pala_Click:
     call Translate_Mouse_Pos_To_Palat_Segment
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; bail out if the mouse cursor isn't inside the palat segment at all.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp [mouse_inside_palat],1
     jne .exit
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; calculate the index of the pala.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov al,byte[mouse_pos_palat_xy+1]   ; y.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov al,byte[mouse_pos_palat_xy+1]       ; y.
     mov cl,NUM_PALA_THUMB_X
-    mul cl                              ; al = index horizontally.
-    add al,byte[mouse_pos_palat_xy]     ; al += x.
+    mul cl                                  ; al = index horizontally.
+    add al,byte[mouse_pos_palat_xy]         ; al += x.
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; change the pala we've got selected, and redraw the editor to update that we've selected
     ; a different pala.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov [selected_pala],al
     call Draw_Pala_Editor
 
-    ; pre-calculate the pala offset in the PALAT data.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; erase the frame of the previously-selected pala's thumbnail.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,[prev_pala_thumb_offs]
+    mov eax,0                               ; the frame's color.
+    call Draw_Pala_Thumb_Halo
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw a frame around the pala we chose.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; first, calculate the x,y pixel offset at the top left corner of this thumbnail.
+    movzx ax,byte[mouse_pos_palat_xy]       ; x.
+    shl ax,3                                ; ax *= 8, the height of a pala thumbnail.
+    mov di,ax
+    add di,3                                ; offset horizontally to match the palat selector segment.
+    movzx ax,byte[mouse_pos_palat_xy+1]     ; y.
+    shl ax,3                                ; ax *= 8, the width of a pala thumbnail.
+    add ax,7                                ; offset vertically to match the palat selector segment.
+    mov cx,SCREEN_W
+    mul cx                                  ; ax = absolute screen y coordinate.
+    add di,ax
+    mov [prev_pala_thumb_offs],di
+    ; then draw it.
+    mov eax,05050505h                       ; the frame's color.
+    call Draw_Pala_Thumb_Halo
 
     .exit:
     ret

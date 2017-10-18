@@ -311,8 +311,6 @@ Draw_Edit_Pixel_4X:                        ; this is a helper function for Draw_
 
     ret
 
-Draw_Scaled_Pala_Pixel:
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Draws all the editable pala textures.
 ;;;
@@ -412,6 +410,42 @@ Draw_Pala_Thumbnail:
     pop ax
     pop cx
     pop di
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws a frame around the given pala thumbnail in the palat selector.
+;;;
+;;; EXPECTS:
+;;;     - es:di to point to the first pixel in the screen buffer to draw to, i.e. the top left corner of the thumbnail.
+;;;     - eax to be the color to fill with, where the color is 1 byte, repeated 4 times.
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Pala_Thumb_Halo:
+    .THUMB_W    = 8                     ; the width of a thumbnail.
+    .Y_SKIP     = (.THUMB_W * SCREEN_W) ; how many pixels we need to skip to get from the top row of the thumbnail to its bottom row.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; fill horizontally.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov [es:di],eax                     ; upper bar.
+    mov [es:di+4],eax
+    mov [es:di+.Y_SKIP],eax             ; lower bar.
+    mov [es:di+.Y_SKIP+4],eax
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; fill vertically.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov cx,9
+    .left_vert:
+        mov [es:di],al
+        mov [es:di+.THUMB_W],al
+        ror eax,8
+        add di,SCREEN_W
+        loop .left_vert
 
     ret
 

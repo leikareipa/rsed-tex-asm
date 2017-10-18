@@ -147,7 +147,15 @@ call Reset_Screen_Buffer_13H
 call Draw_Palette_Selector
 call Draw_Palat_Selector
 call Draw_Pala_Editor
-call Save_Mouse_Cursor_Background           ; prevent a black box in the upper left corner of the screen on startup.
+call Save_Mouse_Cursor_Background       ; prevent a black box in the upper left corner of the screen on startup.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; draw a halo around the currently selected pala's thumbnail in the palat selector.
+; on startup, its position is marked in prev_pala_thumb_offs.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov di,[prev_pala_thumb_offs]
+mov eax,05050505h                       ; the frame's color.
+call Draw_Pala_Thumb_Halo
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; loop until the user presses the right mouse button.
@@ -269,6 +277,8 @@ segment @BASE_DATA
 
     mouse_inside_palat db 0                 ; set to 1 if the mouse is within the palat selector.
     mouse_pos_palat_xy dw 0                 ; the position of the mouse cursor relative to the palat segment.
+    prev_pala_thumb_offs dw 2267            ; the pixel offset on the screen of the top left corner of the thumbnail of the previously selected pala.
+                                            ; it's set by default to the 4th thumbnail.
 
     ; editing.
     magnification db 12                     ; by how much the current pala should be magnified.
