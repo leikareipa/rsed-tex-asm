@@ -292,7 +292,7 @@ segment @BASE_DATA
     selected_pala db 3                      ; the index in the PALAT file of the pala we've selected for editing.
     selected_pala_offset dw 16*16*3         ; pre-computed offset from the start of the PALA file data for the currently selected pala.
     hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
-    pen_color db 4                          ; which palette index the pen is painting with.
+    pen_color db 5                          ; which palette index the pen is painting with.
 
     ; STRINGS
     ; error messages.
@@ -303,7 +303,7 @@ segment @BASE_DATA
                    db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
 
     ; ui messages.
-    message_str db "cCURRENT PALA:",0
+    message_str db "cCURRENT PALA:    .",0
     cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh
                           db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
     project_name_str db "c",0,0,0,0,0,0,0,0,0

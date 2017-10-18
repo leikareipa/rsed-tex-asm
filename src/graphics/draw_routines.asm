@@ -358,7 +358,7 @@ Draw_Current_Pala_ID:
     ; clear the pala id's background to black.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov eax,0
-    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+56
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT))+56
     mov cx,FONT_HEIGHT
     .clear:
         mov [es:di],eax
@@ -367,9 +367,12 @@ Draw_Current_Pala_ID:
         add di,SCREEN_W
         loop .clear
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; print the id on the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     movzx bx,[selected_pala]                ; pala id.
     mov cl,'b'                              ; text color.
-    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT - 0))+56 ; text position.
+    mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT))+56 ; text position.
     call Draw_Unsigned_Integer_Long
 
     ret

@@ -97,6 +97,7 @@ Handle_Editor_Mouse_Click:
 
     mov al,[mouse_pos_palette_y]
     mov [pen_color],al
+    mov [gfx_mouse_cursor+13],al        ; make the color of the mouse cursor's tip be the color we've got selected.
 
     call Draw_Palette_Selector
 
