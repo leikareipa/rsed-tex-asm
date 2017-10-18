@@ -118,7 +118,7 @@ jmp .exit
 call Enable_Mouse
 cmp ax,0
 jne .got_mouse
-mov dx,err_mouse_init                       ; if we fialed to acquire the mouse, display an error message and exit.
+mov dx,err_mouse_init                       ; if we failed to acquire the mouse, display an error message and exit.
 mov ah,9h
 int 21h
 jmp .exit

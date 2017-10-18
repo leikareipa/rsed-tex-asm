@@ -99,14 +99,18 @@ Handle_Edit_Click:
     mov al,byte [mouse_pos_edit_xy+1]       ; y.
     mul cl                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
     add ax,4                                ; y offset on screen of the edit segment.
-    mov cx,SCREEN_W
-    mul cx
+    mov dx,SCREEN_W
+    mul dx
     add bx,ax
     add bx,99                               ; x offset on screen of the edit segment.
     mov di,bx                               ; set the starting pixel in the video buffer for drawing the new edit pixel.
     mov bl,[pen_color]
 
-    mov cl,[magnification]
+int 3
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the pixel with the set color at the current level of magnification.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp cl,12
     jne .8x
     call Draw_Edit_Pixel_12X
@@ -123,12 +127,19 @@ Handle_Edit_Click:
     ; update the pala's data in the PALAT array
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .update_pala_data:
+    ; get the offset in the pala's data where we clicked.
     mov cl,PALA_W
-    movzx bx,byte [mouse_pos_edit_xy]         ; x.
-    mov al,byte [mouse_pos_edit_xy+1]         ; y.
-    mul cl                                  ; ax = al * PALA_W.
-    add bx,ax                               ; bx = offset in pala's data where we clicked.
-    ; then find the current index in the pala data.
+    movzx di,byte[mouse_pos_edit_xy]    ; x.
+    mov al,byte[mouse_pos_edit_xy+1]    ; y.
+    mul cl                              ; ax = al * PALA_W.
+    add di,ax                           ; di = offset in pala's data where we clicked.
+    ; then get the offset of this pala's first pixel in the palat data buffer.
+    mov ax,(PALA_W * PALA_H)
+    movzx cx,byte[selected_pala]
+    mul cx
+    add di,ax                           ; di = offset of the pixel we edited in the palat data buffer.
+    mov bl,[pen_color]
+    mov [gs:pala_data+di],bl            ; save the altered pixel into the data array.
 
     .exit:
     ret
