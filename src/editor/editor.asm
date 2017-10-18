@@ -36,13 +36,7 @@ Handle_Editor_Mouse_Click:
     ; deal with clicks to the palat segment.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palat:
-    call Translate_Mouse_Pos_To_Palat_Segment
-
-    cmp [mouse_inside_palat],1                  ; if the mouse cursor isn't inside the editor rectangle for this segment, we don't need to do anything.
-    jne .exit
-
-    ; pre-calculate the pala offset in the PALAT data.
-
+    call Handle_Pala_Click
     jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,6 +60,45 @@ Handle_Editor_Mouse_Click:
     call Draw_Palette_Selector
 
     jmp .exit
+
+    .exit:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Handles a mouse click to the pala selector segment.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Handle_Pala_Click:
+    call Translate_Mouse_Pos_To_Palat_Segment
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; bail out if the mouse cursor isn't inside the palat segment at all.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp [mouse_inside_palat],1
+    jne .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the index of the pala.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov al,byte[mouse_pos_palat_xy+1]   ; y.
+    mov cl,NUM_PALA_THUMB_X
+    mul cl                              ; al = index horizontally.
+    add al,byte[mouse_pos_palat_xy]     ; al += x.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; change the pala we've got selected, and redraw the editor to update that we've selected
+    ; a different pala.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov [selected_pala],al
+    call Draw_Pala_Editor
+
+    ; pre-calculate the pala offset in the PALAT data.
 
     .exit:
     ret
@@ -105,8 +138,6 @@ Handle_Edit_Click:
     add bx,99                               ; x offset on screen of the edit segment.
     mov di,bx                               ; set the starting pixel in the video buffer for drawing the new edit pixel.
     mov bl,[pen_color]
-
-int 3
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the pixel with the set color at the current level of magnification.
