@@ -126,6 +126,14 @@ Handle_Pala_Click:
     jne .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; repaint the previously selected pala's thumbnail, to indicate any changes in it.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    movzx ax,[selected_pala]
+    mov di,[prev_pala_thumb_offs]
+    add di,SCREEN_W
+    call Draw_Pala_Thumbnail
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; calculate the index of the pala.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov al,byte[mouse_pos_palat_xy+1]       ; y.

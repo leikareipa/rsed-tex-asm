@@ -378,7 +378,7 @@ Draw_Current_Pala_ID:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws all the editable pala textures.
+;;; Draws all the editable pala textures as small thumbnails.
 ;;;
 ;;; EXPECTS:
 ;;;     (- nothing)
