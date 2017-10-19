@@ -108,7 +108,7 @@ jmp .exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; load the palat file. also check to see if there was an error loading it, and if so, exit.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Load_Palat_File2
+call Load_Palat_File
 cmp al,0
 jne .enable_mouse
 mov ah,9h
@@ -143,7 +143,7 @@ call Set_Palette_13H
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; enable our own timer interrupt.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Set_Timer_Interrupt_Handler
+;call Set_Timer_Interrupt_Handler
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; clear the screen and fill the video buffer with the ui's controls.
@@ -256,8 +256,18 @@ call Draw_Pala_Thumb_Halo
 ; end of main loop.
 
 .init_exit:
-call Restore_Timer_Interrupt_Handler        ; make sure DOS gets its timer handler back.
+;call Restore_Timer_Interrupt_Handler        ; make sure DOS gets its timer handler back.
 call Set_Video_Mode_To_Text                 ; exit out of VGA mode 13h.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; save the palat data to disk.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+call Save_Palat_File
+cmp al,1
+je .exit
+mov dx,str_cmd_argument_info
+mov ah,9h
+int 21h
 
 .exit:
 mov ah,4ch
@@ -305,15 +315,16 @@ segment @BASE_DATA
 
     ; STRINGS
     ; error messages.
-    err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
-    err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
+    err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh
+                   db "   Make sure your mouse is installed and that its driver is active.",0ah,0dh,"$"
+    err_palat_load db "ERROR: Failed to load data from the project file. Exiting.",0ah,0dh,"$"
     err_low_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
                    db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
     err_bad_cmd_line db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
 
     ; ui messages.
     message_str db "cCURRENT PALA:    .",0
-    project_name_str db "c",0,0,0,0,0,0,0,0,0
+    project_name_str db "cDEBUG",0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
     str_unsaved_changes db "f*",0           ; a little indicator shown next to the project name when there are unsaved changes.
 

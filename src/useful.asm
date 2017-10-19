@@ -10,8 +10,8 @@ Set_Video_Mode_13H:
 ; Sets the video mode to text (VGA 3h).
 ; ES will point to the start of VGA text memory.
 Set_Video_Mode_To_Text:
-        mov ax,0b800h           ; pointer to vga mode 3h text memory.
-        mov gs,ax
+       ; mov ax,0b800h           ; pointer to vga mode 3h text memory.
+       ; mov gs,ax
         mov ax,3                ; initialize the video mode (ah=0h,al=3h).
         int 10h
         ret

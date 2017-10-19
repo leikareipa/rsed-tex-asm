@@ -9,14 +9,15 @@
 ;;;
 ;;; EXPECTS:
 ;;;     - fn_project_file to give a zero-terminated file name to load from.
-;;;     - pala_data to be a buffer we can read PALA_BUFFER_SIZE bytes into
-;;;     - gs to point to the segment holding the pala_data buffer
+;;;     - pala_data to be a buffer we can read PALA_BUFFER_SIZE bytes into.
+;;;     - gs to point to the segment holding the pala_data buffer.
+;;;     - fs to be a copy of ds, the general data segment.
 ;;; DESTROYS:
 ;;;     (- unknown)
 ;;; RETURNS:
 ;;;     (- unknown)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Load_Palat_File2:
+Load_Palat_File:
     push ds                                 ; prepare to temporarily switch segments.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,7 +71,6 @@ Load_Palat_File2:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov word[fs:file_pala_data_start],ax
     mov word[fs:file_pala_data_start+2],dx
-    mov eax,dword[fs:file_pala_data_start]
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; read in the palat file's data.
@@ -90,6 +90,8 @@ Load_Palat_File2:
     mov cx,PALA_BUFFER_SIZE                 ; how many bytes to read.
     int 21h
     jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    cmp ax,PALA_BUFFER_SIZE                 ; make sure we read just the right number of bytes.
+    jne .exit_fail
 
     jmp .exit_success
 
@@ -105,57 +107,60 @@ Load_Palat_File2:
     pop ds
     ret
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Loads 65024 bytes from the PALAT file into a buffer in memory.
+;;; Saves 65024 bytes of palat data to the project's .dta file.
 ;;;
 ;;; EXPECTS:
-;;;     - palat_file_name to give a zero-terminated file name to load from.
-;;;     - pala_data to be a buffer we can read PALA_BUFFER_SIZE bytes into
-;;;     - gs to point to the segment holding the pala_data buffer
+;;;     - fn_project_file to give a zero-terminated file name to load from.
+;;;     - pala_data to be a buffer we can read PALA_BUFFER_SIZE bytes into.
+;;;     - gs to point to the segment holding the pala_data buffer.
+;;;     - fs to be a copy of ds, the general data segment.
 ;;; DESTROYS:
-;;;     - ax, bx, cx, dx
+;;;     (- unknown)
 ;;; RETURNS:
-;;;     - al set to 1 if loading succeeded, 0 if failed.
+;;;     (- unknown)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Load_Palat_File:
-    push ds
+Save_Palat_File:
+    push ds                                 ; prepare to temporarily switch segments.
+
+    mov bx,[fh_project_file]                ; get the project's file handle. we assume the handle is already open.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; open the file for reading.
+    ; switch to the segment that holds the palat data buffer we want to read into.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov dx,palat_file_name
-    mov ah,3dh
-    mov al,0                                ; set to open for reading.
-    int 21h                                 ; obtain file handle (goes into ax).
-    jc .open_failed                         ; the carry flag will be set on load failure.
+    mov ax,gs
+    mov ds,ax
 
+int 3
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; read from the file.
+    ; write the palat data into the project's .dta file.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov bx,ax                               ; pass the file handle to bx.
-    mov ax,gs                               ;
-    mov ds,ax                               ;
-    mov dx,pala_data                        ; prepare the correct segment and address to read into.
-    mov cx,PALA_BUFFER_SIZE                 ; how many bytes to read.
-    mov ah,3fh
-    int 21h
+    ; seek to the start of the data.
+    mov eax,[fs:file_pala_data_start]       ; get the byte offset in the .dta file where the palat data begins.
+    add eax,4                               ; skip the long int describing the following data's length.
+    mov dx,ax                               ; dx = the least significant bit of the offset.
+    shr eax,16                              ; move the most significant byte to ax.
+    mov cx,ax                               ; cx = the most significant bit of the offset.
+    mov ax,4200h                            ; set to move file position, offset from beginning.
+    int 21h                                 ; seek.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    ; write the data.
+    mov cx,PALA_BUFFER_SIZE                 ; set to write the entire palat buffer.
+    mov dx,pala_data
+    mov ah,40h
+    int 21h                                 ; write
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; test for read errors.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    jc .read_failed                         ; the carry flag will be set on read failure.
-    cmp ax,PALA_BUFFER_SIZE                 ; ax == number of bytes that were read.
-    jne .read_failed                        ; assume failure if we didn't read exactly the number of bytes we wanted.
+    jmp .exit_success
 
-    mov al,1                                ; otherwise, mark as a successful loading.
-    jmp .success
+    .exit_fail:
+    mov al,0
+    jmp .exit
 
-    .open_failed:
-    .read_failed:
-    mov al,0                                ; mark as a failed loading.
+    .exit_success:
+    mov al,1
+    jmp .exit
 
-    .success:
+    .exit:
     pop ds
-
     ret

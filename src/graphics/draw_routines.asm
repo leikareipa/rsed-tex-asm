@@ -322,7 +322,7 @@ Draw_Edit_Pixel_4X:                        ; this is a helper function for Draw_
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Project_Title:
-    mov di,(SCREEN_W * 3) + 4
+    mov di,(SCREEN_W * 2) + 4
     mov si,str_unsaved_changes
     call Draw_String
 
