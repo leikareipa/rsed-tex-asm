@@ -3,9 +3,7 @@
 ; Note that in mode 13h, each palette entry is defined with a red, green, blue triad such
 ; that the valid range of values for each channel is 0-63 (not 0-255).
 ;
-; Note also that the color channels are defined here in reverse order (red, green, blue).
-;
-palette         db 000h, 000h, 000h ; index 0.
+palette         db 000h, 000h, 010h ; index 0.
                 db 002h, 010h, 004h ; index 1.
                 db 004h, 018h, 009h ; index 2.
                 db 006h, 020h, 00ch ; index 3.

@@ -64,19 +64,18 @@ Set_Palette_13H:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Reset_Screen_Buffer_13H:
     mov di,vga_buffer
-    mov eax,0                           ; color to clear with.
+    mov eax,65656565h                   ; color to clear with (65h = black).
     mov cx,3e80h                        ; how many bytes to clear (320*200 = 64000/4 = 16000).
     rep stosd                           ; clear the screen in four-byte steps.
 
     ret
 Reset_Screen_Buffer_13H_Partially:
-    ;mov di,vga_buffer                   ; location to start clearing from.
-    mov eax,0                           ; color to clear with.
+    ;mov di,vga_buffer                  ; location to start clearing from.
+    mov eax,65656565h                   ; color to clear with (65h = black).
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; clear around the timer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov cl,DEBUG_MODE
     cmp cl,1
     jne .clear_marker
