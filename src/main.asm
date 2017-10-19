@@ -57,29 +57,35 @@ shr ax,6                                    ; convert to kilobytes.
 mov [gs:free_conventional_memory],ax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; skip parsing the command line if we have debugging enabled. if we don't do this, the dosbox debugger wigs out.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov ax,DEBUG_MODE
+cmp ax,1
+je .assign_segments
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; parse the command line.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 call Parse_Command_Line
 cmp al,1
-je .cmd_line_parse_success
+je .assign_segments
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; if we failed to parse the command line, display an error message and exit.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-mov dx,err_commd_line_malformed
+mov dx,str_cmd_argument_info
 mov ah,9h
 int 21h
-mov dx,cmd_argument_info_str
+mov dx,err_bad_cmd_line
 mov ah,9h
 int 21h
-;jmp .exit                                   ; this needs to be commented out if using the dosbox debugger.
-
-.cmd_line_parse_success:
+jmp .exit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; assign segments.
 ; cs = code, ds = data, es = video memory buffer, fs = copy of ds, gs = palat file data as a flat array.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.assign_segments:
 mov ax,@BASE_DATA
 mov ds,ax
 mov fs,ax
@@ -102,20 +108,18 @@ jmp .exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; load the palat file. also check to see if there was an error loading it, and if so, exit.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Load_Palat_File
+call Load_Palat_File2
 cmp al,0
-jne .got_file
-mov dx,palat_file_name                      ; if we failed to load the palat file, display an error message and exit.
+jne .enable_mouse
 mov ah,9h
-int 21h
 mov dx,err_palat_load
 int 21h
 jmp .exit
-.got_file:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; enable the mouse. the routine will return 0 in ax if it failed.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.enable_mouse:
 call Enable_Mouse
 cmp ax,0
 jne .got_mouse
@@ -294,23 +298,32 @@ segment @BASE_DATA
     hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
     pen_color db 5                          ; which palette index the pen is painting with.
 
+    ; file handles.
+    fh_project_file dw 0
+
+    file_pala_data_start dd 0               ; the byte offset in the project's file where the palat file's data starts.
+
     ; STRINGS
     ; error messages.
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh,"$"
     err_palat_load db "ERROR: Could not load data from the PALAT file. Exiting.",0ah,0dh,"$"
-    err_commd_line_malformed db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
     err_low_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
                    db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
+    err_bad_cmd_line db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
 
     ; ui messages.
     message_str db "cCURRENT PALA:    .",0
-    cmd_argument_info_str db "   Expected command line usage: rsed_tex <project name>",0ah,0dh
-                          db "   The project name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
     project_name_str db "c",0,0,0,0,0,0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
     str_unsaved_changes db "f*",0           ; a little indicator shown next to the project name when there are unsaved changes.
 
+    ; info messages.
+    str_cmd_argument_info db "RallySportED Texture Editor v.7 / October 2017.",0ah,0dh
+                          db "Expected command line usage: rsed_tex <track name>",0ah,0dh
+                          db "The track name can be of up to eight ASCII characters from A-Z.",0ah,0dh,"$"
+
     ; file info.
+    fn_project_file db "KLOROFYL\KLOROFYL.DTA",0,0,0,0 ; the name and path to the project file. this is changed later by the program to adjust to the project we want to open.
     project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project we're loading data from.
     project_name_len db 0                   ; the number of characters in the project name, excluding the null terminator.
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.

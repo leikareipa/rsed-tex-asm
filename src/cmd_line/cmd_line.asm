@@ -58,8 +58,8 @@ Parse_Command_Line:
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ; construct the project file's path at the same time.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        mov [project_file_name+si],al
-        mov [project_file_name+di],al
+        mov [fn_project_file+si],al
+        mov [fn_project_file+di],al
 
         add [project_name_len],1
         add si,1
@@ -73,25 +73,27 @@ Parse_Command_Line:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; finalize the project file path string.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov [project_file_name+si],'\'
-    mov [project_file_name+di],'.'
+    mov [project_name+si],0
+    mov [project_name+si+1],'$'
+    mov [fn_project_file+si],'\'
+    mov [fn_project_file+di],'.'
     add di,1
-    mov [project_file_name+di],'x'
+    mov [fn_project_file+di],'D'
     mov [project_file_ext_offset],di
     add di,1
-    mov [project_file_name+di],'x'
+    mov [fn_project_file+di],'T'
     add di,1
-    mov [project_file_name+di],'x'
+    mov [fn_project_file+di],'A'
     add di,1
-    mov [project_file_name+di],0
-    add di,1
-    mov [project_file_name+di],'$'
+    mov [fn_project_file+di],0
 
     jmp .cmd_line_parse_success
 
     .cmd_line_parse_fail:
     mov al,0
+    jmp .exit
 
     .cmd_line_parse_success:
 
+    .exit:
     ret
