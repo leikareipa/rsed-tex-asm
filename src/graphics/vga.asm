@@ -91,7 +91,7 @@ Reset_Screen_Buffer_13H_Partially:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; clear around the save marker.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;.
     .clear_marker:
     mov di,vga_buffer
     add di,SCREEN_W

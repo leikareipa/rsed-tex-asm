@@ -357,7 +357,7 @@ Draw_Current_Pala_ID:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; clear the pala id's background to black.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov eax,0
+    mov eax,65656565h                   ; color to clear with. 65h = black.
     mov di,(SCREEN_W * (SCREEN_H - FONT_HEIGHT))+56
     mov cx,FONT_HEIGHT
     .clear:

@@ -98,16 +98,29 @@ mov gs,ax
 ; exit if we don't have enough conventional memory.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 cmp [free_conventional_memory],BASE_MEM_REQUIRED
-jge .got_memory
+jge .load_sandbox
 mov dx,err_low_memory
 mov ah,9h
 int 21h
 jmp .exit
-.got_memory:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; load the track's specific data from the sandboxed ~~LLYE.EXE. this assumes that rsed_ldr has first been run
+; to sandbox the RALLYE.EXE file and apply the track's manifesto to it.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.load_sandbox:
+call Load_Sandbox_Data
+cmp al,0
+jne .load_palat
+mov ah,9h
+mov dx,err_sandbox
+int 21h
+jmp .exit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; load the palat file. also check to see if there was an error loading it, and if so, exit.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.load_palat:
 call Load_Palat_File
 cmp al,0
 jne .enable_mouse
@@ -310,11 +323,20 @@ segment @BASE_DATA
 
     ; file handles.
     fh_project_file dw 0
+    fh_sb_rallye_exe dw 0
 
     file_pala_data_start dd 0               ; the byte offset in the project's file where the palat file's data starts.
 
+    ; track info.
+    track_id db 0                               ; which track we have (0-7).
+    palat_id db 0                               ; which palat file we use (0-1).
+    track_palette_id db 0,0,0,0,1,2,0,3         ; which of the game's four palettes the given track uses.
+    palette_offset dd 202d6h,20336h,20396h,203f6h ; the byte offset at which the xth palette begins in RALLYE.EXE.
+
     ; STRINGS
     ; error messages.
+    err_sandbox db "ERROR: Failed to access sandboxed information. Exiting.",0ah,0dh
+                db "   Make sure you've run rsed_ldr first.",0ah,0dh,"$"
     err_mouse_init db "ERROR: Failed to initialize the mouse. Exiting.",0ah,0dh
                    db "   Make sure your mouse is installed and that its driver is active.",0ah,0dh,"$"
     err_palat_load db "ERROR: Failed to load data from the project file. Exiting.",0ah,0dh,"$"
@@ -335,6 +357,7 @@ segment @BASE_DATA
 
     ; file info.
     fn_project_file db "KLOROFYL\KLOROFYL.DTA",0,0,0,0 ; the name and path to the project file. this is changed later by the program to adjust to the project we want to open.
+    fn_sb_rallye_exe db "~~LLYE.EXE",0      ; the name of the game's main executable, RALLYE.EXE, sandboxed to ~~LLYE.EXE.
     project_name db 0,0,0,0,0,0,0,0,0,"$"   ; the name of the project we're loading data from.
     project_name_len db 0                   ; the number of characters in the project name, excluding the null terminator.
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
@@ -349,6 +372,8 @@ segment @BASE_DATA
     timer_seconds db 0
     timer_keepup db 0                       ; used to help the dos timer keep up with custom timer values.
     frame_time db 0
+
+    tmp dd 0                                ; a few temporary storage bytes.
 
     include "text/font.inc"                 ; the character set for the text renderer.
     include "graphics/palette.inc"          ; the graphics palette.

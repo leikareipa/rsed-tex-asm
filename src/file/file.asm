@@ -61,7 +61,7 @@ Load_Palat_File:
         mov dx,word [pala_data]
         mov ax,4201h                            ; set to move file position, offset from current position.
         int 21h                                 ; move file position.
-        jc .exit_fail                         ; error-checking (the cf flag will be set by int 21h if there was an error).
+        jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
 
         sub si,1
         jnz .seek_to_kierros
@@ -131,7 +131,6 @@ Save_Palat_File:
     mov ax,gs
     mov ds,ax
 
-int 3
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; write the palat data into the project's .dta file.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -163,4 +162,171 @@ int 3
 
     .exit:
     pop ds
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Loads the track's specific data from the game's sandboxed executables.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Load_Sandbox_Data:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; open the sandboxed ~~LLYE.EXE.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    xor cx,cx
+    mov dx,fn_sb_rallye_exe                 ; file name.
+    mov ah,3dh                              ; set to open.
+    mov al,0                                ; read only.
+    int 21h                                 ; do it.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    mov [fh_sb_rallye_exe],ax               ; save the file handle.
+
+    call Load_Track_IDs
+    cmp al,1
+    jne .exit_fail
+
+    call Load_Palette
+    cmp al,1
+    jne .exit_fail
+
+    jmp .exit_success
+
+    .exit_fail:
+    mov al,0
+    jmp .exit
+
+    .exit_success:
+    mov al,1
+    jmp .exit
+
+    .exit:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; close the sandboxed executable files.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ah,3eh                              ; set to close.
+    mov bx,[fh_sb_rallye_exe]
+    int 21h
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Loads the map maasto and palat IDs from ~~LLYE.EXE.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Load_Track_IDs:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; read maasto id.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; seek to the correct byte offset.
+    mov ebx,20878h                          ; maasto.00_x_.
+    mov dx,bx                               ; dx = lowest bits of the offset.
+    shr ebx,16
+    mov cx,bx                               ; cx = highest bits of the offset.
+    mov bx,[fh_sb_rallye_exe]
+    mov ax,4200h                            ; set to move file position, offset from the beginning.
+    int 21h                                 ; move file position.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    ; read in the maasto id.
+    mov dx,track_id
+    mov cx,1
+    mov ah,3fh
+    int 21h                                 ; read.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    sub [track_id],'1'                      ; convert the track id to zero-based decimal.
+    test [track_id],11111000b                ; make sure the track is is in the range 0-7.
+    jnz .exit_fail
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; read palat id.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; seek to the correct byte offset.
+    mov cx,0
+    mov dx,21
+    mov ax,4201h                            ; set to move file position, offset from current position.
+    int 21h                                 ; move file position.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    ; read in the palat id.
+    mov dx,palat_id
+    mov cx,1
+    mov ah,3fh
+    int 21h                                 ; read.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    mov al,[palat_id]
+    mov [pala_file_str+9],al
+
+    jmp .exit_success
+
+    .exit_fail:
+    mov al,0
+    jmp .exit
+
+    .exit_success:
+    mov al,1
+    jmp .exit
+
+    .exit:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Loads the game's palette from the RALLYE.EXE executable.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Load_Palette:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the file offset for the given color in this track's palette in ~~LLYE.EXE.
+    ; the index will be in cx:dx, from where int 21h, ah = 42h will read it.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    movzx bx,byte [track_id]
+    movzx ebx,byte [track_palette_id+bx]    ; get which palette the track uses.
+    lea ebx,dword [palette_offset+(ebx*4)]  ;
+    mov ebx,[ebx]                           ; ebx = byte offset in RALLYE.EXE where this track's palette begins.
+    mov dx,bx                               ; dx = lowest bits of the offset.
+    shr ebx,16
+    mov cx,bx                               ; cx = highest bits of the offset.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; read in the palette.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; seek to the palette's byte offset in ~~LLYE.EXE.
+    mov bx,[fh_sb_rallye_exe]               ; file handle to the sandboxed ~~LLYE.EXE file.
+    mov ax,4200h                            ; set to move file position, offset from beginning.
+    int 21h                                 ; move file position.
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    ; read in the palette.
+    mov dx,palette
+    mov ah,3fh
+    mov cx,96                               ; 32 colors, each 3 bytes.
+    int 21h
+    jc .exit_fail                           ; error-checking (the cf flag will be set by int 21h if there was an error).
+    cmp ax,96                               ; make sure we read just the right number of bytes.
+    jne .exit_fail
+
+    jmp .exit_success
+
+    .exit_fail:
+    mov al,0
+    jmp .exit
+
+    .exit_success:
+    mov al,1
+    jmp .exit
+
+    .exit:
     ret
