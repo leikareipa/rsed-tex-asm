@@ -242,15 +242,15 @@ Handle_Edit_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; calculate the offset of the current pala pixel in the palat data. the offset will be placed in si.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    movzx si,byte[mouse_pos_edit_xy]    ; x.
-    movzx ax,byte[mouse_pos_edit_xy+1]  ; y.
-    shl ax,4                            ; multiply by 16 (PALA_W).
-    add si,ax                           ; si = offset in pala's data where we clicked.
+    movzx si,byte[mouse_pos_edit_xy]        ; x.
+    movzx ax,byte[mouse_pos_edit_xy+1]      ; y.
+    shl ax,4                                ; multiply by 16 (PALA_W).
+    add si,ax                               ; si = offset in pala's data where we clicked.
     ; then get the offset of this pala's first pixel in the palat data buffer.
     mov ax,(PALA_W * PALA_H)
     movzx cx,byte[selected_pala]
     mul cx
-    add si,ax                           ; si = offset of the pixel we edited in the palat data buffer.
+    add si,ax                               ; si = offset of the pixel we edited in the palat data buffer.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the user pressed anything but the right button, paint with the current pen color. otherwise,
@@ -263,7 +263,7 @@ Handle_Edit_Click:
     push gs
     mov ax,@BUFFER_3
     mov gs,ax
-    mov bl,[gs:pala_data+si]            ; save the altered pixel into the data array.
+    mov bl,[gs:pala_data+si]                ; save the altered pixel into the data array.
     pop gs
 
     .draw:
@@ -272,7 +272,7 @@ Handle_Edit_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; update the pala's data in the PALAT array
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov [gs:pala_data+si],bl            ; save the altered pixel into the data array.
+    mov [gs:pala_data+si],bl                ; save the altered pixel into the data array.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; update the ui accordingly.
@@ -323,6 +323,7 @@ Handle_Editor_Keyboard_Input:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;;; TODO: handle the save error.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Draw_Save_Error_Marker
     jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

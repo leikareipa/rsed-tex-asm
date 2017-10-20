@@ -39,7 +39,6 @@ include "useful.asm"
 include "text/text.asm"
 include "graphics/vga.asm"
 include "graphics/draw_routines.asm"
-include "timer/timer.asm"
 include "input/mouse/mouse.asm"
 include "input/keyboard/keyboard.asm"
 include "file/file.asm"
@@ -237,16 +236,6 @@ mov ah,0                                    ; set to change the video mode.
 mov al,3                                    ; the video mode we want.
 int 10h                                     ; change the video mode.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; save the palat data to disk.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;call Save_Palat_File
-cmp al,1
-je .exit
-mov dx,str_cmd_argument_info
-mov ah,9h
-int 21h
-
 .exit:
 mov ah,4ch
 mov al,0
@@ -313,6 +302,7 @@ segment @BASE_DATA
     project_name_str db "cDEBUG",0,0,0,0
     pala_file_str db "cPALAT.001",0         ; the name of the palat file we're editing. for cosmetic purposes.
     str_unsaved_changes db "f*",0           ; a little indicator shown next to the project name when there are unsaved changes.
+    str_unsaved_changes_err db "g*",0       ; a little indicator shown when saving changes fails.
 
     ; info messages.
     str_cmd_argument_info db "RallySportED Texture Editor v.7 / October 2017.",0ah,0dh
@@ -327,15 +317,6 @@ segment @BASE_DATA
     palat_file_name db "PALAT.001",0,0ah,0dh,"$" ; the name of the actual file we'll load the palat data from.
     project_file_name rb 22                 ; the name and path to the project file, which is 'proj_name\proj_name.xxx'.
     project_file_ext_offset dw 0            ; the offset in project_file_name where the file's 3-character extension begins.
-
-    ; timer-related.
-    int_8h_handler dd 10203040h             ; address of dos's interrupt handler. first word is the segment, second word is the address.
-    frames_done db 0                        ; how many frames we've rendered. used for naive timing; loops over every 256 frames.
-    seconds db 0
-    timer_ticks db 0                        ; how many ticks we've counted. this gets reset when we've tallied enough for a full second.
-    timer_seconds db 0
-    timer_keepup db 0                       ; used to help the dos timer keep up with custom timer values.
-    frame_time db 0
 
     ; keyboard stuff.
     key_pressed db 0                        ; which key on the keyboard is currently pressed down.

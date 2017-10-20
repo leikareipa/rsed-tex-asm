@@ -381,6 +381,11 @@ Draw_Unsaved_Changes_Marker:
     mov si,str_unsaved_changes
     call Draw_String
     ret
+Draw_Save_Error_Marker:
+    mov di,(SCREEN_W * 2) + 4
+    mov si,str_unsaved_changes_err
+    call Draw_String
+    ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Repaints the edit pixel under the mouse cursor.
