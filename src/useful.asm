@@ -1,21 +1,5 @@
 ; Useful subroutines for assembly programs.
 
-; Sets the video mode to graphics (VGA 13h).
-; ES will point to the start of VGA video memory.
-Set_Video_Mode_13H:
-        mov ax,13h              ; initialize the video mode (ah=0h,al=13h).
-        int 10h
-        ret
-
-; Sets the video mode to text (VGA 3h).
-; ES will point to the start of VGA text memory.
-Set_Video_Mode_To_Text:
-       ; mov ax,0b800h           ; pointer to vga mode 3h text memory.
-       ; mov gs,ax
-        mov ax,3                ; initialize the video mode (ah=0h,al=3h).
-        int 10h
-        ret
-
 ; Waits for vertical refresh (vsync).
 ; EXPECTS:
 ;	(- nothing)
@@ -54,14 +38,15 @@ Flip_Video_Buffer:
     mov ax,VRAM_SEG                         ; set up the destination (video memory).
     mov es,ax                               ;
     xor di,di                               ; start at offset 0 in video memory.
+    xor si,si
 
     call Wait_For_VSync
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; copy the vga buffer into video memory.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;mov cx,3e80h                            ; how many double words to copy (320*200 = 64000/4 = 16000).
-    ;rep movsd
+    mov cx,3e80h                            ; how many double words to copy (320*200 = 64000/4 = 16000).
+    rep movsd
 
     pop ds
     pop es

@@ -52,6 +52,54 @@ Set_Palette_13H:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Redraws the entire screen.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Redraw_All:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; set to draw everything into the video buffer, so we can use double buffering to eliminate flicker.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push es
+    mov ax,@VGA_BUFFER
+    mov es,ax
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; clear the screen and fill the video buffer with the ui's controls.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Reset_Screen_Buffer_13H
+    call Draw_Palette_Selector
+    call Draw_Palat_Selector
+    call Draw_Project_Title
+    call Draw_Current_Pala_ID
+    call Draw_Pala_Editor
+    call Save_Mouse_Cursor_Background       ; prevent a black box in the upper left corner of the screen on startup.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw a halo around the currently selected pala's thumbnail in the palat selector.
+    ; on startup, its position is marked in prev_pala_thumb_offs.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov di,[prev_pala_thumb_offs]
+    mov eax,05050505h                       ; the frame's color.
+    call Draw_Pala_Thumb_Halo
+
+    call Draw_Mouse_Cursor
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; wait for vsync, then copy the video buffer into video memory and so onto the display.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Flip_Video_Buffer
+
+    pop es
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Clears the video memory in VGA mode 13h four bytes at a time.
 ;;;
 ;;; EXPECTS:

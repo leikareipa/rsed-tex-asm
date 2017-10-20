@@ -57,47 +57,50 @@ Handle_Editor_Mouse_Move:
 ;;;     (- unknown)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Handle_Editor_Mouse_Click:
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; see if any mouse buttons were pressed, and if not, we can exit.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     test [mouse_buttons],01b
     jz .exit
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; find out which editor segment the mouse is in.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,word[mouse_pos_xy+2]         ; ax = mouse y pos.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax,word[mouse_pos_xy+2]             ; ax = mouse y pos.
     cmp ax,90
     jl .in_palat
     cmp ax,290
     jl .in_edit
     jmp .in_palette
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; deal with clicks to the palat segment.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palat:
     call Handle_Pala_Click
     jmp .exit
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; deal with clicks to the edit segment.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_edit:
     call Handle_Edit_Click
     jmp .exit
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; deal with clicks to the palette segment.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palette:
     call Translate_Mouse_Pos_To_Palette_Segment
     cmp [mouse_inside_palette],1
     jne .exit
 
+    ; change the pen color.
     mov al,[mouse_pos_palette_y]
+    cmp al,[pen_color]                      ; if the pen color is the same as before, no need to change anything.
+    je .exit
     mov [pen_color],al
-    mov [gfx_mouse_cursor+13],al        ; make the color of the mouse cursor's tip be the color we've got selected.
+    mov [gfx_mouse_cursor+13],al            ; make the color of the mouse cursor's tip be the color we've got selected.
 
     call Draw_Palette_Selector
 
@@ -259,6 +262,58 @@ Handle_Edit_Click:
     add di,ax                           ; di = offset of the pixel we edited in the palat data buffer.
     mov bl,[pen_color]
     mov [gs:pala_data+di],bl            ; save the altered pixel into the data array.
+
+    .exit:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Deals with keyboard input by responding properly to the program's keyboard shortcuts.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Handle_Editor_Keyboard_Input:
+    mov al,[key_pressed]
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; find out which key was pressed.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .test_no_key:
+    cmp al,KEY_NO_KEY
+    je .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; set the pala editor's size larger.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .test_plus:
+    cmp al,KEY_PLUS
+    jne .test_minus
+    add [magnification],4
+    cmp [magnification],12                  ; make sure we set the size no larger than 12.
+    jng .repaint_plus
+    mov [magnification],12
+    jmp .exit                               ; we already had the maximum size, so don't need to redraw.
+    .repaint_plus:
+    call Redraw_All
+    jmp .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; set the pala editor's size smaller.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .test_minus:
+    cmp al,KEY_MINUS
+    jne .exit
+    sub [magnification],4
+    jnz .repaint_minus
+    mov [magnification],4                   ; if the size is smaller than 4, set it to 4.
+    jmp .exit                               ; we already had the minimum size, so no need to redraw.
+    .repaint_minus:
+    call Redraw_All
+    jmp .exit
 
     .exit:
     ret

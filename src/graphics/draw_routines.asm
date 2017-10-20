@@ -38,6 +38,33 @@ Draw_Pala_Editor:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Resets the background of the pala editor to black.
+;;;
+;;; EXPECTS:
+;;;     (- unknown)
+;;; DESTROYS:
+;;;     (- unknown)
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Reset_Pala_Editor_Background:
+    mov di,(SCREEN_W * 4) + 99              ; start from the top left corner of the pala edit field.
+    mov eax,65656565h                       ; 65h = black.
+    mov cx,192                              ; 192 pixel rows.
+    .reset:
+        mov bx,48                           ; there are a maximum of 192 pixels horizontally, and we fill in 4 at a time.
+        .horizontal:
+            mov [es:di],eax                 ; fill 4 pixels with black.
+            add di,4
+            sub bx,1
+            jnz .horizontal
+
+        add di,SCREEN_W-192                 ; move to the start of the next horizontal row.
+        loop .reset
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Draws a single pala texture as a custom-sized thumbnail.
 ;;;
 ;;; EXPECTS:
@@ -609,6 +636,8 @@ Erase_Mouse_Cursor:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
     jnz .erase_cursor                       ; if it was, erase the cursor.
+    cmp [key_pressed],KEY_NO_KEY
+    jne .erase_cursor
     mov ecx,[mouse_pos_xy]
     cmp ecx,[prev_mouse_pos_xy]             ; see whether the mouse has moved.
     je .dont_erase_cursor                   ; if it hasn't, don't erase the cursor.
@@ -637,6 +666,8 @@ Draw_Mouse_Cursor:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
     jnz .redraw_cursor                      ; if it was, redraw the cursor.
+    cmp [key_pressed],KEY_NO_KEY
+    jne .redraw_cursor
     mov ecx,[mouse_pos_xy]
     cmp ecx,[prev_mouse_pos_xy]             ; see whether the mouse has moved.
     je .skip_redraw                         ; if it hasn't, don't redraw the cursor.

@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DEBUG_MODE          = 0                     ; set to 1 if the debug mode is enabled.
 BASE_MEM_REQUIRED   = 140                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
-VGA_BUFFER_SIZE     = 0
+VGA_BUFFER_SIZE     = 0fa00h
 PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
 TRANSPARENT_COLOR   = 0                     ; transparent color index.
@@ -41,6 +41,7 @@ include "graphics/vga.asm"
 include "graphics/draw_routines.asm"
 include "timer/timer.asm"
 include "input/mouse/mouse.asm"
+include "input/keyboard/keyboard.asm"
 include "file/file.asm"
 include "cmd_line/cmd_line.asm"
 include "editor/editor.asm"
@@ -144,9 +145,18 @@ jmp .exit
 .got_mouse:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; set the keyboard key repeat delay rate low.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov ah,3
+mov al,4
+int 16h
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; initialize vga mode to 13h for graphics.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Set_Video_Mode_13H
+mov ah,0                                    ; set to change the video mode.
+mov al,13h                                  ; the video mode we want.
+int 10h                                     ; change the video mode.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; set the game's palette.
@@ -157,26 +167,12 @@ call Set_Palette_13H
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; enable our own timer interrupt.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Set_Timer_Interrupt_Handler
+;call Set_Timer_Interrupt_Handler
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; clear the screen and fill the video buffer with the ui's controls.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Reset_Screen_Buffer_13H
-call Draw_Palette_Selector
-call Draw_Palat_Selector
-call Draw_Project_Title
-call Draw_Current_Pala_ID
-call Draw_Pala_Editor
-call Save_Mouse_Cursor_Background       ; prevent a black box in the upper left corner of the screen on startup.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; draw a halo around the currently selected pala's thumbnail in the palat selector.
-; on startup, its position is marked in prev_pala_thumb_offs.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-mov di,[prev_pala_thumb_offs]
-mov eax,05050505h                       ; the frame's color.
-call Draw_Pala_Thumb_Halo
+call Redraw_All
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; loop until the user presses the right mouse button.
@@ -200,8 +196,18 @@ call Draw_Pala_Thumb_Halo
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    test [mouse_buttons],10b                ; bit 1 is set if the right button was clicked.
-    jnz .init_exit
+    ;test [mouse_buttons],10b                ; bit 1 is set if the right button was clicked.
+    ;jnz .init_exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; get info on which keyboard button is being held down, and deal with any
+    ; keyboard input (like saving the data).
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Poll_Keyboard_Status
+    call Handle_Editor_Keyboard_Input
+    cmp [key_pressed],KEY_ZERO
+    je .init_exit
+    mov [key_pressed],KEY_NO_KEY            ; any keys pressed have been handled, so discard them.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; get the current mouse position and its button status.
@@ -219,20 +225,6 @@ call Draw_Pala_Thumb_Halo
     call Handle_Editor_Mouse_Click          ; process the mouse click in some way.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; if the mouse is at the upper border of the screen, print out how long it took to render the previous frame.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov al,DEBUG_MODE
-    cmp al,1
-    jne .skip_fps_display
-    movzx bx,[frame_time]
-    mov cl,'g'
-    mov di,628
-    call Draw_Unsigned_Integer
-    mov [frame_time],0
-
-    .skip_fps_display:
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; draw the mouse cursor on screen.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     call Draw_Mouse_Cursor
@@ -244,17 +236,26 @@ call Draw_Pala_Thumb_Halo
     ;call Flip_Video_Buffer
 
     jmp .main_loop
-
-; end of main loop.
+; END OF MAIN LOOP.
+;;;;;;;;;;;;;;;;;;;;
 
 .init_exit:
-call Restore_Timer_Interrupt_Handler        ; make sure DOS gets its timer handler back.
-call Set_Video_Mode_To_Text                 ; exit out of VGA mode 13h.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; make sure dos gets its own timer handler back.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;call Restore_Timer_Interrupt_Handler
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; initialize the video mode back to text.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov ah,0                                    ; set to change the video mode.
+mov al,3                                    ; the video mode we want.
+int 10h                                     ; change the video mode.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; save the palat data to disk.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-call Save_Palat_File
+;call Save_Palat_File
 cmp al,1
 je .exit
 mov dx,str_cmd_argument_info
@@ -265,10 +266,8 @@ int 21h
 mov ah,4ch
 mov al,0
 int 21h
-
-; end of program
-
-
+; END OF PROGRAM.
+;;;;;;;;;;;;;;;;;;
 
 
 
@@ -352,13 +351,15 @@ segment @BASE_DATA
     timer_keepup db 0                       ; used to help the dos timer keep up with custom timer values.
     frame_time db 0
 
-    tmp dd 0                                ; a few temporary storage bytes.
+    ; keyboard stuff.
+    key_pressed db 0                        ; which key on the keyboard is currently pressed down.
+    key_lock db 0                           ; if set to 1, we don't accept new input from the keyboard.
 
     include "text/font.inc"                 ; the character set for the text renderer.
     include "graphics/palette.inc"          ; the graphics palette.
     include "input/mouse/mouse_cursor.inc"  ; the mouse cursor image.
 
-segment @BUFFER_1
+segment @VGA_BUFFER
     vga_buffer rb VGA_BUFFER_SIZE           ; we draw into this buffer, then flip it onto the screen at the end of the frame.
                                             ; NOTE: this buffer needs to start at offset 0 in its segment. this is because we might have decided to
                                             ; disable double buffering, in which case we'll be writing directly into vga video memory, which'll be

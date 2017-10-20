@@ -18,5 +18,6 @@ DISTFILES += \
     src/graphics/draw_routines.asm \
     src/file/file.asm \
     src/cmd_line/cmd_line.asm \
-    src/editor/editor.asm
+    src/editor/editor.asm \
+    src/input/keyboard/keyboard.asm
 
