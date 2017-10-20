@@ -19,6 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Load_Palat_File:
     push ds                                 ; prepare to temporarily switch segments.
+    push es
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; open the project's .dta file.
@@ -93,6 +94,17 @@ Load_Palat_File:
     cmp ax,PALA_BUFFER_SIZE                 ; make sure we read just the right number of bytes.
     jne .exit_fail
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; copy the palat data to a backup buffer, for undo.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bx,@BUFFER_3
+    mov es,bx
+    mov si,pala_data
+    mov di,pala_data_backup
+    mov cx,ax
+    shr cx,2                                ; div by 4, as we'll copy 4 bytes at a time.
+    rep movsd
+
     jmp .exit_success
 
     .exit_fail:
@@ -104,6 +116,7 @@ Load_Palat_File:
     jmp .exit
 
     .exit:
+    pop es
     pop ds
     ret
 

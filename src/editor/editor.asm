@@ -60,8 +60,9 @@ Handle_Editor_Mouse_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; see if any mouse buttons were pressed, and if not, we can exit.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    test [mouse_buttons],01b                ; left button.
-    jnz .handle_left_click
+    ;test [mouse_buttons],01b                ; left button.
+    cmp [mouse_buttons],0                   ; 0 = no buttons pressed.
+    jne .handle_left_click
 
     mov [click_in_segment],0                ; signal that we haven't clicked in any segment.
     jmp .exit
@@ -232,62 +233,46 @@ Handle_Pala_Click:
 Handle_Edit_Click:
     call Translate_Mouse_Pos_To_Edit_Segment
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; bail out if the mouse cursor isn't inside the edit segment at all.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     cmp [mouse_inside_edit],1
     jne .exit
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; update the edit pixel under the mouse cursor.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cl,[magnification]
-    mov al,byte [mouse_pos_edit_xy]         ; x.
-    mul cl                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
-    mov bx,ax
-    mov al,byte [mouse_pos_edit_xy+1]       ; y.
-    mul cl                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
-    add ax,4                                ; y offset on screen of the edit segment.
-    mov dx,SCREEN_W
-    mul dx
-    add bx,ax
-    add bx,99                               ; x offset on screen of the edit segment.
-    mov di,bx                               ; set the starting pixel in the video buffer for drawing the new edit pixel.
-    mov bl,[pen_color]
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; draw the pixel with the set color at the current level of magnification.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    cmp cl,12
-    jne .8x
-    call Draw_Edit_Pixel_12X
-    jmp .update_pala_data
-    .8x:
-    cmp cl,8
-    jne .4x
-    call Draw_Edit_Pixel_8X
-    jmp .update_pala_data
-    .4x:
-    call Draw_Edit_Pixel_4X
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; update the pala's data in the PALAT array
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    .update_pala_data:
-    ; get the offset in the pala's data where we clicked.
-   ; mov cl,PALA_W
-    movzx di,byte[mouse_pos_edit_xy]    ; x.
-    movzx ax,byte[mouse_pos_edit_xy+1]    ; y.
-    ;mul cl                              ; ax = al * PALA_W.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; calculate the offset of the current pala pixel in the palat data. the offset will be placed in si.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    movzx si,byte[mouse_pos_edit_xy]    ; x.
+    movzx ax,byte[mouse_pos_edit_xy+1]  ; y.
     shl ax,4                            ; multiply by 16 (PALA_W).
-    add di,ax                           ; di = offset in pala's data where we clicked.
+    add si,ax                           ; si = offset in pala's data where we clicked.
     ; then get the offset of this pala's first pixel in the palat data buffer.
     mov ax,(PALA_W * PALA_H)
     movzx cx,byte[selected_pala]
     mul cx
-    add di,ax                           ; di = offset of the pixel we edited in the palat data buffer.
-    mov bl,[pen_color]
-    mov [gs:pala_data+di],bl            ; save the altered pixel into the data array.
+    add si,ax                           ; si = offset of the pixel we edited in the palat data buffer.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; if the user pressed anything but the right button, paint with the current pen color. otherwise,
+    ; paint with this pala pixel's original color, thus undoing any changes.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bl,[pen_color]                      ; prepare to paint with the current pen color.
+    test [mouse_buttons],10b                ; but if the user was pressing the right mouse button, paint instead with the pala's original pixel color.
+    jz .draw
+    ; change the data palat data segment to the backup version.
+    push gs
+    mov ax,@BUFFER_3
+    mov gs,ax
+    mov bl,[gs:pala_data+si]            ; save the altered pixel into the data array.
+    pop gs
+
+    .draw:
+    call Redraw_Current_Edit_Pixel
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; update the pala's data in the PALAT array
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov [gs:pala_data+si],bl            ; save the altered pixel into the data array.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; update the ui accordingly.

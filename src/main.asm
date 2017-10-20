@@ -8,7 +8,7 @@
 ; constants.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DEBUG_MODE          = 0                     ; set to 1 if the debug mode is enabled.
-BASE_MEM_REQUIRED   = 140                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
+BASE_MEM_REQUIRED   = 260                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
 VGA_BUFFER_SIZE     = 0fa00h
 PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
@@ -305,7 +305,7 @@ segment @BASE_DATA
                    db "   Make sure your mouse is installed and that its driver is active.",0ah,0dh,"$"
     err_palat_load db "ERROR: Failed to load data from the project file. Exiting.",0ah,0dh,"$"
     err_low_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
-                   db "   Try to have at least 140 KB of free memory.",0ah,0dh,"$"
+                   db "   Try to have at least 260 KB of free memory.",0ah,0dh,"$"
     err_bad_cmd_line db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
 
     ; ui messages.
@@ -356,4 +356,7 @@ segment @BUFFER_2
     pala_data rb PALA_BUFFER_SIZE           ; the texture pixel data loaded from the palat file is stored here.
 
     cursor_background rb (CURSOR_W * CURSOR_H) ; used to store the background of the mouse cursor, so we can erase the cursor without redrawing the whole screen.
+
+segment @BUFFER_3
+    pala_data_backup rb PALA_BUFFER_SIZE    ; we store a copy of the palat data here, for undo.
 

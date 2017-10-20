@@ -383,6 +383,50 @@ Draw_Unsaved_Changes_Marker:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Repaints the edit pixel under the mouse cursor.
+;;;
+;;; EXPECTS:
+;;;     - bl to give the color to paint with.
+;;; DESTROYS:
+;;;     - ax, bh, cx, dx, di.
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Redraw_Current_Edit_Pixel:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; update the edit pixel under the mouse cursor.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov bh,[magnification]
+    mov al,byte [mouse_pos_edit_xy]         ; x.
+    mul bh                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
+    mov di,ax
+    mov al,byte [mouse_pos_edit_xy+1]       ; y.
+    mul bh                                  ; convert from relative edit segment coordinates to absolute screen coordinates.
+    add ax,4                                ; y offset on screen of the edit segment.
+    mov cx,SCREEN_W
+    mul cx
+    add di,ax
+    add di,99                               ; x offset on screen of the edit segment.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; draw the pixel with the set color at the current level of magnification.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp bh,12
+    jne .8x
+    call Draw_Edit_Pixel_12X
+    jmp .exit
+    .8x:
+    cmp bh,8
+    jne .4x
+    call Draw_Edit_Pixel_8X
+    jmp .exit
+    .4x:
+    call Draw_Edit_Pixel_4X
+
+    .exit:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Prints the ID of the currently selected pala in the bottom left corner of the screen.
 ;;;
 ;;; EXPECTS:
@@ -646,8 +690,8 @@ Erase_Mouse_Cursor:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; we only want to erase the cursor if it has moved since the last frame, or if the user had clicked on something.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
-    jnz .erase_cursor                       ; if it was, erase the cursor.
+    cmp [mouse_buttons],0                   ; see if a mouse button was pressed.
+    jne .erase_cursor                       ; if it was, erase the cursor.
     cmp [key_pressed],KEY_NO_KEY
     jne .erase_cursor
     mov ecx,[mouse_pos_xy]
@@ -676,8 +720,8 @@ Draw_Mouse_Cursor:
     ; the last frame, or if the user had clicked on something. if we didn't erase the cursor, we don't want to
     ; redraw it again now, so skip that if the cursor hasn't moved and the user hasn't pressed any mouse buttons.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
-    jnz .redraw_cursor                      ; if it was, redraw the cursor.
+    cmp [mouse_buttons],0                   ; see if a mouse button was pressed.
+    jne .redraw_cursor                      ; if it was, redraw the cursor.
     cmp [key_pressed],KEY_NO_KEY
     jne .redraw_cursor
     mov ecx,[mouse_pos_xy]
