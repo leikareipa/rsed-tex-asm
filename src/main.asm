@@ -185,21 +185,6 @@ call Redraw_All
     call Wait_For_VSync
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; clear the screen.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;mov di,vga_buffer
-    ;call Reset_Screen_Buffer_13H
-    ;call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
-
-    ;call Draw_Project_Title
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; exit if the user right-clicked the mouse.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;test [mouse_buttons],10b                ; bit 1 is set if the right button was clicked.
-    ;jnz .init_exit
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; get info on which keyboard button is being held down, and deal with any
     ; keyboard input (like saving the data).
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

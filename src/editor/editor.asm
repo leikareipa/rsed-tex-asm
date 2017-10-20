@@ -186,9 +186,9 @@ Handle_Pala_Click:
     call Draw_Pala_Thumb_Halo
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; update the ui text on which pala we've got selected.
+    ; update the ui accordingly.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    call Draw_Current_Pala_ID
+    call Draw_Current_Pala_ID               ; indicate the id of the pala we chose.
 
     .exit:
     ret
@@ -263,6 +263,11 @@ Handle_Edit_Click:
     mov bl,[pen_color]
     mov [gs:pala_data+di],bl            ; save the altered pixel into the data array.
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; update the ui accordingly.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Draw_Unsaved_Changes_Marker        ; indicate that there are unsaved changes in the data.
+
     .exit:
     ret
 
@@ -285,6 +290,29 @@ Handle_Editor_Keyboard_Input:
     .test_no_key:
     cmp al,KEY_NO_KEY
     je .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; save the palat data into the project file.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .test_s:
+    cmp al,KEY_S
+    jne .test_plus
+    call Save_Palat_File
+    cmp al,1
+    jne .save_error
+    ; clear the save marker.
+    mov eax,65656565h                       ; 65h = black.
+    mov di,(SCREEN_W * 2) + 4
+    mov [es:di],eax
+    mov [es:di+SCREEN_W],eax
+    mov [es:di+SCREEN_W*2],eax
+    mov [es:di+SCREEN_W*3],eax
+    jmp .exit
+    .save_error:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;; TODO: handle the save error.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; set the pala editor's size larger.

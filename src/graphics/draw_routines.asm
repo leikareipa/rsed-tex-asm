@@ -349,10 +349,6 @@ Draw_Edit_Pixel_4X:                        ; this is a helper function for Draw_
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Draw_Project_Title:
-    mov di,(SCREEN_W * 2) + 4
-    mov si,str_unsaved_changes
-    call Draw_String
-
     mov di,(SCREEN_W * 2) + 9
     mov si,project_name_str
     call Draw_String
@@ -368,6 +364,22 @@ Draw_Project_Title:
     mov si,message_str
     call Draw_String
 
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Prints a red '*' in the top left corner of the screen to indicate that there are unsaved changes present.
+;;;
+;;; EXPECTS:
+;;;     (- nothing)
+;;; DESTROYS:
+;;;     - di, si.
+;;; RETURNS:
+;;;     (- nothing)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Unsaved_Changes_Marker:
+    mov di,(SCREEN_W * 2) + 4
+    mov si,str_unsaved_changes
+    call Draw_String
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
