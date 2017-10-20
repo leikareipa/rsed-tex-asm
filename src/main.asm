@@ -236,6 +236,13 @@ mov ah,0                                    ; set to change the video mode.
 mov al,3                                    ; the video mode we want.
 int 10h                                     ; change the video mode.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; close the project's .dta file.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov ah,3eh                              ; set to close.
+mov bx,[fh_project_file]
+int 21h
+
 .exit:
 mov ah,4ch
 mov al,0

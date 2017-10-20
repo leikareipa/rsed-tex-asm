@@ -243,7 +243,9 @@ Handle_Edit_Click:
     ; calculate the offset of the current pala pixel in the palat data. the offset will be placed in si.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     movzx si,byte[mouse_pos_edit_xy]        ; x.
-    movzx ax,byte[mouse_pos_edit_xy+1]      ; y.
+    mov ax,(PALA_H - 1)
+    movzx bx,byte[mouse_pos_edit_xy+1]      ; y.
+    sub ax,bx                               ; flip the vertical coordinate.
     shl ax,4                                ; multiply by 16 (PALA_W).
     add si,ax                               ; si = offset in pala's data where we clicked.
     ; then get the offset of this pala's first pixel in the palat data buffer.

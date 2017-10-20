@@ -84,6 +84,7 @@ Draw_Pala_Enlarged_4X:
     mov si,(PALA_W * PALA_H)
     mul si
     mov si,ax                                       ; si stores the offset.
+    add si,(PALA_W * PALA_H) - PALA_W       ; flip the pala vertically.
 
     mov cx,PALA_H
     .column:
@@ -117,6 +118,7 @@ Draw_Pala_Enlarged_4X:
             add di,.MAGNIF
             loop .row
         add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF))          ; move down to the next scanline.
+        sub si,(PALA_W * 2)
         pop cx
         loop .column
 
@@ -130,6 +132,7 @@ Draw_Pala_Enlarged_8X:
     mov si,(PALA_W * PALA_H)
     mul si
     mov si,ax                               ; si stores the offset.
+    add si,(PALA_W * PALA_H) - PALA_W       ; flip the pala vertically.
 
     mov cx,PALA_H
     .column:
@@ -180,6 +183,7 @@ Draw_Pala_Enlarged_8X:
             add di,.MAGNIF
             loop .row
         add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF))          ; move down to the next scanline.
+        sub si,(PALA_W * 2)
         pop cx
         loop .column
 
@@ -193,6 +197,7 @@ Draw_Pala_Enlarged_12X:
     mov si,(PALA_W * PALA_H)
     mul si
     mov si,ax                               ; si stores the offset.
+    add si,(PALA_W * PALA_H) - PALA_W       ; flip the pala vertically.
 
     mov cx,PALA_H
     .column:
@@ -207,6 +212,7 @@ Draw_Pala_Enlarged_12X:
 
             loop .row
         add di,((SCREEN_W * .MAGNIF) - (PALA_W * .MAGNIF)) ; move down to the next scanline.
+        sub si,(PALA_W * 2)
         pop cx
         loop .column
 
@@ -524,21 +530,24 @@ Draw_Pala_Thumbnail:
     mov bx,(PALA_W * PALA_H)
     mul bx
     mov bx,ax                               ; bx stores the offset.
+    add bx,(PALA_W * PALA_H) - 1            ; we trace the pala's data backwards to flip it on the screen.
+
+    add di,.THUMBNAIL_SIZE                  ; we draw from right to left, so flip the pala horizontally.
 
     mov cx,(.THUMBNAIL_SIZE - 1)            ; we subtract 1 to get a horizontal outline effect.
     .row:
         push cx
         mov cx,(.THUMBNAIL_SIZE - 1)        ; we subtract 1 to get a vertical outline effect.
-        add bx,2                            ; pre-add to these to get that outline effect.
-        add di,1                            ;
+        sub bx,2                            ; pre-add to these to get that outline effect.
+        sub di,1                            ;
         .column:
             mov al,[gs:pala_data+bx]        ; get the next pixel from the pala.
             mov byte [es:di],al             ; draw.
-            add di,1
-            add bx,2
+            sub di,1
+            sub bx,2
             loop .column
-        add di,(SCREEN_W - .THUMBNAIL_SIZE) ; move down to the next scanline.
-        add bx,PALA_W                       ; skip a line in the pala, since we're doing 8x8 instead of 16x16.
+        add di,(SCREEN_W + .THUMBNAIL_SIZE) ; move down to the next scanline.
+        sub bx,PALA_W                       ; skip a line in the pala, since we're doing 8x8 instead of 16x16.
         pop cx
         loop .row
 
