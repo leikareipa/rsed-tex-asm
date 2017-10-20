@@ -26,20 +26,26 @@ KEY_ZERO            = 5
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Poll_Keyboard_Status:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; get the keyboard status.
+    ; find whether there is a new key in the input buffer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov ah,1
     int 16h
     jnz .test_key_lock                      ; if no keys were pressed.
     mov [key_lock],0                        ; release the key lock.
-    jmp .exit
+    jmp .clear_buffer
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; if the key lock is enabled, no new keys are allowed to be pressed.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .test_key_lock:
     cmp [key_lock],1
-    je .clear_buffer
+    je .no_known_key
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; fetch the key from the input buffer.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ah,0
+    int 16h
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; suss out which key was pressed.
@@ -83,9 +89,9 @@ Poll_Keyboard_Status:
     ; clear the keyboard buffer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .clear_buffer:
-    mov ah,0ch
-    mov al,0
-    int 21h
+    ;mov ah,0ch
+    ;mov al,0
+    ;int 21h
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; engage the key lock if the user pressed a known key.

@@ -70,9 +70,16 @@ Redraw_All:
     mov es,ax
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; clear the screen and fill the video buffer with the ui's controls.
+    ; clear the video buffer.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    call Reset_Screen_Buffer_13H
+    mov di,vga_buffer
+    mov eax,65656565h                   ; color to clear with (65h = black).
+    mov cx,3e80h                        ; how many bytes to clear (320*200 = 64000/4 = 16000).
+    rep stosd                           ; clear the screen in four-byte steps.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; fill the video buffer with the ui's controls.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     call Draw_Palette_Selector
     call Draw_Palat_Selector
     call Draw_Project_Title
@@ -96,57 +103,5 @@ Redraw_All:
     call Flip_Video_Buffer
 
     pop es
-
-    ret
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Clears the video memory in VGA mode 13h four bytes at a time.
-;;;
-;;; EXPECTS:
-;;;	- eax to hold the value to clear with, such that each of its bytes is a copy of that value
-;;;	- di to point to the beginning of video memory (segment: es).
-;;; DESTROYS:
-;;;     - di
-;;; RETURNS:
-;;;     (- nothing)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Reset_Screen_Buffer_13H:
-    mov di,vga_buffer
-    mov eax,65656565h                   ; color to clear with (65h = black).
-    mov cx,3e80h                        ; how many bytes to clear (320*200 = 64000/4 = 16000).
-    rep stosd                           ; clear the screen in four-byte steps.
-
-    ret
-Reset_Screen_Buffer_13H_Partially:
-    ;mov di,vga_buffer                  ; location to start clearing from.
-    mov eax,65656565h                   ; color to clear with (65h = black).
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; clear around the timer.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cl,DEBUG_MODE
-    cmp cl,1
-    jne .clear_marker
-    .clear_timer:
-    mov di,vga_buffer
-    add di,SCREEN_W
-    mov cx,FONT_HEIGHT
-    .timer:
-        mov [es:di+308],eax
-        mov [es:di+308+4],eax
-        add di,SCREEN_W
-        loop .timer
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; clear around the save marker.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;.
-    .clear_marker:
-    mov di,vga_buffer
-    add di,SCREEN_W
-    mov cx,FONT_HEIGHT
-    .marker:
-        mov [es:di+4],eax
-        add di,SCREEN_W
-        loop .marker
 
     ret
