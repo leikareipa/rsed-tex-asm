@@ -283,6 +283,7 @@ segment @BASE_DATA
     selected_pala_offset dw 16*16*3         ; pre-computed offset from the start of the PALA file data for the currently selected pala.
     hovering_pala db 0                      ; the pala over which the mouse is hovering in the palat selector.
     pen_color db 5                          ; which palette index the pen is painting with.
+    click_in_segment db 0                   ; which segment (palat picker, editor, palette) the mouse has been clicked in. if 0, none.
 
     ; file handles.
     fh_project_file dw 0

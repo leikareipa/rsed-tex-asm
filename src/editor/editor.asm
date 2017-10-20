@@ -60,9 +60,13 @@ Handle_Editor_Mouse_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; see if any mouse buttons were pressed, and if not, we can exit.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    test [mouse_buttons],01b
-    jz .exit
+    test [mouse_buttons],01b                ; left button.
+    jnz .handle_left_click
 
+    mov [click_in_segment],0                ; signal that we haven't clicked in any segment.
+    jmp .exit
+
+    .handle_left_click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; find out which editor segment the mouse is in.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,20 +81,40 @@ Handle_Editor_Mouse_Click:
     ; deal with clicks to the palat segment.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palat:
+    cmp [click_in_segment],0                ; make sure we don't deal with clicks in this segment if the mouse is held down and was originally
+    je .handle_palat                        ; ...clicked in another segment. this helps prevent cases where you're e.g. painting a pala and
+    cmp [click_in_segment],1                ; ...accidentally move the mouse over the palat selector, which would then otherwise switch the pala
+    je .handle_palat                        ; ...being edited.
+    jmp .exit
+    .handle_palat:
     call Handle_Pala_Click
+    mov [click_in_segment],1
     jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; deal with clicks to the edit segment.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_edit:
+    cmp [click_in_segment],0
+    je .handle_edit
+    cmp [click_in_segment],2
+    je .handle_edit
+    jmp .exit
+    .handle_edit:
     call Handle_Edit_Click
+    mov [click_in_segment],2
     jmp .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; deal with clicks to the palette segment.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .in_palette:
+    cmp [click_in_segment],0
+    je .handle_palette
+    cmp [click_in_segment],3
+    je .handle_palette
+    jmp .exit
+    .handle_palette:
     call Translate_Mouse_Pos_To_Palette_Segment
     cmp [mouse_inside_palette],1
     jne .exit
@@ -103,6 +127,8 @@ Handle_Editor_Mouse_Click:
     mov [gfx_mouse_cursor+13],al            ; make the color of the mouse cursor's tip be the color we've got selected.
 
     call Draw_Palette_Selector
+
+    mov [click_in_segment],3
 
     jmp .exit
 
