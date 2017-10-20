@@ -126,20 +126,28 @@ Handle_Pala_Click:
     jne .exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; repaint the previously selected pala's thumbnail, to indicate any changes in it.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    movzx ax,[selected_pala]
-    mov di,[prev_pala_thumb_offs]
-    add di,SCREEN_W
-    call Draw_Pala_Thumbnail
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; calculate the index of the pala.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     mov al,byte[mouse_pos_palat_xy+1]       ; y.
     mov cl,NUM_PALA_THUMB_X
     mul cl                                  ; al = index horizontally.
     add al,byte[mouse_pos_palat_xy]         ; al += x.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; we don't need to do anything if the pala we clicked on was already selected.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    cmp al,[selected_pala]
+    je .exit
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; repaint the previously selected pala's thumbnail, to indicate any changes in it.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push ax
+    movzx ax,[selected_pala]
+    mov di,[prev_pala_thumb_offs]
+    add di,SCREEN_W
+    call Draw_Pala_Thumbnail
+    pop ax
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; change the pala we've got selected, and redraw the editor to update that we've selected
@@ -238,10 +246,11 @@ Handle_Edit_Click:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .update_pala_data:
     ; get the offset in the pala's data where we clicked.
-    mov cl,PALA_W
+   ; mov cl,PALA_W
     movzx di,byte[mouse_pos_edit_xy]    ; x.
-    mov al,byte[mouse_pos_edit_xy+1]    ; y.
-    mul cl                              ; ax = al * PALA_W.
+    movzx ax,byte[mouse_pos_edit_xy+1]    ; y.
+    ;mul cl                              ; ax = al * PALA_W.
+    shl ax,4                            ; multiply by 16 (PALA_W).
     add di,ax                           ; di = offset in pala's data where we clicked.
     ; then get the offset of this pala's first pixel in the palat data buffer.
     mov ax,(PALA_W * PALA_H)

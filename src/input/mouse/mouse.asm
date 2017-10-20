@@ -23,6 +23,40 @@ Enable_Mouse:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Gets the mouse's current x,y position, and whether any mouse buttons are being held.
+;;;
+;;; EXPECTS:
+;;;     - ds to point to the data segment containing the mouse's current position, etc.
+;;; DESTROYS:
+;;;     - ax, bx, ecx, dx.
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Poll_Mouse_Status:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; save the mouse's location from last frame, so we'll know by how much it has moved since then.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ecx,dword [mouse_pos_xy]
+    mov dword [prev_mouse_pos_xy],ecx
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; poll the mouse's status from the bios. this'll put x into dx, y into into cx, and mouse status into bx.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax,3
+    int 33h
+    shr cx,1                                ; divide x coordinate by 2.
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; save the mouse status into variables in memory, for later access.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    rol ecx,16                              ; move x coordinate into high bits of ecx.
+    mov cx,dx                               ; put y coordinate into low bits of ecx.
+    mov dword [mouse_pos_xy],ecx            ; save the mouse position for later use.
+    mov word [mouse_buttons],bx             ; save mouse buttons' status for later use.
+
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Translates the mouse's current coordinates to the palette segment.
 ;;;
 ;;; Note that this function should be called AFTER you've obtained the mouse cursor's current x,y coordinates

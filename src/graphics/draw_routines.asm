@@ -594,20 +594,83 @@ Draw_Color_Swatch:
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Draws the mouse cursor, with alpha. Checks to make sure no out-of-screen drawing is done.
+;;; Erases the mouse cursor from the screen by redrawing its background over it.
 ;;;
 ;;; EXPECTS:
-;;;     - ds:si to point to the beginning of the image's pixel buffer
-;;;	- es:di to point to the location in video memory where the top left corner of the image will be drawn
+;;;     - ds to point to the data segment containing the mouse's current position, the cursor graphic, etc.
 ;;; DESTROYS:
-;;;     - ax, bx, cx, dx
+;;;     - ecx.
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Erase_Mouse_Cursor:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; we only want to erase the cursor if it has moved since the last frame, or if the user had clicked on something.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
+    jnz .erase_cursor                       ; if it was, erase the cursor.
+    mov ecx,[mouse_pos_xy]
+    cmp ecx,[prev_mouse_pos_xy]             ; see whether the mouse has moved.
+    je .dont_erase_cursor                   ; if it hasn't, don't erase the cursor.
+
+    .erase_cursor:
+    call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
+
+    .dont_erase_cursor:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws the mouse cursor on screen.
+;;;
+;;; EXPECTS:
+;;;     - ds to point to the data segment containing the mouse's current position, the cursor graphic, etc.
+;;; DESTROYS:
+;;;     - ecx.
+;;; RETURNS:
+;;;     (- unknown)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Draw_Mouse_Cursor:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; earlier, we only redrew the cursor's background, thus erasing the cursor, if the cursor had moved since
+    ; the last frame, or if the user had clicked on something. if we didn't erase the cursor, we don't want to
+    ; redraw it again now, so skip that if the cursor hasn't moved and the user hasn't pressed any mouse buttons.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    test [mouse_buttons],0001b              ; see if the left mouse button was pressed.
+    jnz .redraw_cursor                      ; if it was, redraw the cursor.
+    mov ecx,[mouse_pos_xy]
+    cmp ecx,[prev_mouse_pos_xy]             ; see whether the mouse has moved.
+    je .skip_redraw                         ; if it hasn't, don't redraw the cursor.
+
+    .redraw_cursor:
+    call Save_Mouse_Cursor_Background       ; save the cursor's background this frame, so we can use to it erase the cursor next frame.
+    call Draw_Mouse_Cursor_Graphic
+
+    .skip_redraw:
+    ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Draws the mouse cursor's graphic on screen, with alpha. Checks to make sure no out-of-screen drawing is done.
+;;;
+;;; EXPECTS:
+;;;     - ds to point to the data segment containing the mouse's current position, the cursor graphic, etc.
+;;; DESTROYS:
+;;;     - ax, bx, cx, dx, di, si.
 ;;; RETURNS:
 ;;;     (- nothing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Draw_Mouse_Cursor:
-    ;push si
-    ;push di
+Draw_Mouse_Cursor_Graphic:
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; map the mouse's screen x,y coordinates into an offset in the video memory buffer.
+    ; the offset will be stored in di.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ecx,dword [mouse_pos_xy]
+    call ECX_To_VGA_Mem_Offset
+    add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; load si with the pointer to the mouse cursor graphic.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,gfx_mouse_cursor
     add si,2                                ; skip the cursor image's header.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -678,8 +741,6 @@ Draw_Mouse_Cursor:
         jnz .draw_img_y
 
     .done:
-    ;pop di
-    ;pop si
     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

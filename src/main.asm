@@ -8,7 +8,8 @@
 ; constants.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DEBUG_MODE          = 0                     ; set to 1 if the debug mode is enabled.
-BASE_MEM_REQUIRED   = 200                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
+BASE_MEM_REQUIRED   = 140                   ; how much base (conventional) memory the program needs. if the user has less, the program exits.
+VGA_BUFFER_SIZE     = 0
 PALA_BUFFER_SIZE    = 65024                 ; how many bytes of data from the PALA file we'll load and handle.
 VRAM_SEG            = 0a000h                ; address of the video ram segment in vga mode 13h.
 TRANSPARENT_COLOR   = 0                     ; transparent color index.
@@ -89,7 +90,7 @@ jmp .exit
 mov ax,@BASE_DATA
 mov ds,ax
 mov fs,ax
-mov ax,@BUFFER_1
+mov ax,VRAM_SEG;@BUFFER_1
 mov es,ax
 mov ax,@BUFFER_2
 mov gs,ax
@@ -156,7 +157,7 @@ call Set_Palette_13H
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; enable our own timer interrupt.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;call Set_Timer_Interrupt_Handler
+call Set_Timer_Interrupt_Handler
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; clear the screen and fill the video buffer with the ui's controls.
@@ -182,13 +183,19 @@ call Draw_Pala_Thumb_Halo
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .main_loop:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; wait until the monitor's refresh period is over, then start processing the next frame
+    ; while the monitor isn't drawing the contents of the video memory onto the screen.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Wait_For_VSync
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; clear the screen.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;mov di,vga_buffer
     ;call Reset_Screen_Buffer_13H
-    call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
+    ;call Reset_Screen_Buffer_13H_Partially  ; for temporary debugging.
 
-    call Draw_Project_Title
+    ;call Draw_Project_Title
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; exit if the user right-clicked the mouse.
@@ -197,21 +204,18 @@ call Draw_Pala_Thumb_Halo
     jnz .init_exit
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; get mouse position and button status. will place mouse x position in cx, and y position in dx. bx will hold mouse button status.
+    ; get the current mouse position and its button status.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ecx,dword [mouse_pos_xy]
-    mov dword [prev_mouse_pos_xy],ecx       ; save the mouse's location from last frame.
-    mov ax,3
-    int 33h
-    shr cx,1                                ; divide x coordinate by 2.
-    rol ecx,16                              ; move x coordinate into high bits of ecx.
-    mov cx,dx                               ; put y coordinate into low bits of ecx.
-    mov dword [mouse_pos_xy],ecx            ; save the mouse position for later use.
-    mov word [mouse_buttons],bx             ; save mouse buttons' status for later use.
+    call Poll_Mouse_Status
 
-    call Redraw_Mouse_Cursor_Background     ; repaint the cursor's background at its position last frame.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; remove the mouse cursor from screen by redrawing its background over the cursor graphic.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    call Erase_Mouse_Cursor
 
-    call Handle_Editor_Mouse_Move           ; process mouse movement in some way.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; process any mouse clicks the user may have made.
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     call Handle_Editor_Mouse_Click          ; process the mouse click in some way.
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,47 +233,22 @@ call Draw_Pala_Thumb_Halo
     .skip_fps_display:
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; print out the mouse's current coordinates.
+    ; draw the mouse cursor on screen.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;cmp [mouse_inside_palat],1
-    ;jne .skip_mouse_display
-    ;mov dx,[mouse_pos_palat_xy]
-    ;movzx bx,dl
-    ;mov cl,'g'
-    ;mov di,(SCREEN_W * 1) + 70
-    ;call Draw_Unsigned_Integer_Long
-    ;movzx bx,dh
-    ;mov cl,'g'
-    ;mov di,(SCREEN_W * 1) + 50
-    ;call Draw_Unsigned_Integer_Long
-    ;.skip_mouse_display:
-    ;movzx bx,byte [mouse_pos_palette_y]
-    ;mov cl,'g'
-    ;mov di,(SCREEN_W * 1) + 20
-    ;call Draw_Unsigned_Integer_Long
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; draw the mouse cursor.
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    call Save_Mouse_Cursor_Background       ; save the cursor's background this frame, so we can use to it erase the cursor next frame.
-    mov ecx,dword [mouse_pos_xy]
-    call ECX_To_VGA_Mem_Offset              ; map the mouse's x,y position into an offset in the video memory buffer (di).
-    add di,vga_buffer                       ; offset the video memory buffer index to start where the buffer starts in its segment.
-    mov si,gfx_mouse_cursor
     call Draw_Mouse_Cursor
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; copy the vga buffer to video memory.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov si,vga_buffer
-    call Flip_Video_Buffer
+    ;mov si,vga_buffer
+    ;call Flip_Video_Buffer
 
     jmp .main_loop
 
 ; end of main loop.
 
 .init_exit:
-;call Restore_Timer_Interrupt_Handler        ; make sure DOS gets its timer handler back.
+call Restore_Timer_Interrupt_Handler        ; make sure DOS gets its timer handler back.
 call Set_Video_Mode_To_Text                 ; exit out of VGA mode 13h.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,7 +320,7 @@ segment @BASE_DATA
                    db "   Make sure your mouse is installed and that its driver is active.",0ah,0dh,"$"
     err_palat_load db "ERROR: Failed to load data from the project file. Exiting.",0ah,0dh,"$"
     err_low_memory db "ERROR: Not enough free conventional memory to run the program. Exiting.",0ah,0dh
-                   db "   Try to have at least 200 KB of free memory.",0ah,0dh,"$"
+                   db "   Try to have at least 140 KB of free memory.",0ah,0dh,"$"
     err_bad_cmd_line db "ERROR: Malformed command line argument. Exiting.",0ah,0dh,"$"
 
     ; ui messages.
@@ -380,7 +359,11 @@ segment @BASE_DATA
     include "input/mouse/mouse_cursor.inc"  ; the mouse cursor image.
 
 segment @BUFFER_1
-    vga_buffer rb 0fa00h                    ; we draw into this buffer, then flip it onto the screen at the end of the frame.
+    vga_buffer rb VGA_BUFFER_SIZE           ; we draw into this buffer, then flip it onto the screen at the end of the frame.
+                                            ; NOTE: this buffer needs to start at offset 0 in its segment. this is because we might have decided to
+                                            ; disable double buffering, in which case we'll be writing directly into vga video memory, which'll be
+                                            ; at offset 0 of its segment, and this way we don't need to change code that aligns the offset to
+                                            ; the vga_buffer buffer.
 
 segment @BUFFER_2
     pala_data rb PALA_BUFFER_SIZE           ; the texture pixel data loaded from the palat file is stored here.

@@ -60,8 +60,8 @@ Flip_Video_Buffer:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; copy the vga buffer into video memory.
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov cx,3e80h                            ; how many double words to copy (320*200 = 64000/4 = 16000).
-    rep movsd
+    ;mov cx,3e80h                            ; how many double words to copy (320*200 = 64000/4 = 16000).
+    ;rep movsd
 
     pop ds
     pop es
